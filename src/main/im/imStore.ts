@@ -8,6 +8,7 @@ import {
   IMGatewayConfig,
   DingTalkConfig,
   FeishuConfig,
+  TelegramOpenClawConfig,
   QQConfig,
   TelegramConfig,
   DiscordConfig,
@@ -19,6 +20,7 @@ import {
   IMSessionMapping,
   DEFAULT_DINGTALK_CONFIG,
   DEFAULT_FEISHU_CONFIG,
+  DEFAULT_TELEGRAM_OPENCLAW_CONFIG,
   DEFAULT_QQ_CONFIG,
   DEFAULT_TELEGRAM_CONFIG,
   DEFAULT_DISCORD_CONFIG,
@@ -129,6 +131,41 @@ export class IMStore {
       }
     }
 
+    // Migrate old native Telegram config to new OpenClaw format
+    const oldTelegramResult = this.db.exec('SELECT value FROM im_config WHERE key = ?', ['telegram']);
+    const newTelegramResult = this.db.exec('SELECT value FROM im_config WHERE key = ?', ['telegramOpenClaw']);
+    if (oldTelegramResult[0]?.values[0] && !newTelegramResult[0]?.values[0]) {
+      try {
+        const oldConfig = JSON.parse(oldTelegramResult[0].values[0][0] as string) as {
+          enabled?: boolean;
+          botToken?: string;
+          allowedUserIds?: string[];
+          debug?: boolean;
+        };
+        if (oldConfig.botToken) {
+          const hasAllowList = Array.isArray(oldConfig.allowedUserIds) && oldConfig.allowedUserIds.length > 0;
+          const newConfig = {
+            ...DEFAULT_TELEGRAM_OPENCLAW_CONFIG,
+            enabled: oldConfig.enabled ?? false,
+            botToken: oldConfig.botToken,
+            allowFrom: oldConfig.allowedUserIds ?? [],
+            dmPolicy: hasAllowList ? 'allowlist' as const : 'pairing' as const,
+            debug: oldConfig.debug ?? true,
+          };
+          const now = Date.now();
+          this.db.run(
+            'INSERT OR REPLACE INTO im_config (key, value, created_at, updated_at) VALUES (?, ?, ?, ?)',
+            ['telegramOpenClaw', JSON.stringify(newConfig), now, now]
+          );
+          this.db.run('DELETE FROM im_config WHERE key = ?', ['telegram']);
+          changed = true;
+          console.log('[IMStore] Migrated old Telegram config to OpenClaw format');
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    }
+
     if (changed) {
       this.saveDb();
     }
@@ -165,7 +202,7 @@ export class IMStore {
   getConfig(): IMGatewayConfig {
     const dingtalk = this.getConfigValue<DingTalkConfig>('dingtalk') ?? DEFAULT_DINGTALK_CONFIG;
     const feishu = this.getConfigValue<FeishuConfig>('feishu') ?? DEFAULT_FEISHU_CONFIG;
-    const telegram = this.getConfigValue<TelegramConfig>('telegram') ?? DEFAULT_TELEGRAM_CONFIG;
+    const telegram = this.getConfigValue<TelegramOpenClawConfig>('telegramOpenClaw') ?? DEFAULT_TELEGRAM_OPENCLAW_CONFIG;
     const discord = this.getConfigValue<DiscordConfig>('discord') ?? DEFAULT_DISCORD_CONFIG;
     const nim = this.getConfigValue<NimConfig>('nim') ?? DEFAULT_NIM_CONFIG;
     const xiaomifeng = this.getConfigValue<XiaomifengConfig>('xiaomifeng') ?? DEFAULT_XIAOMIFENG_CONFIG;
@@ -187,7 +224,7 @@ export class IMStore {
     return {
       dingtalk: resolveEnabled(dingtalk, DEFAULT_DINGTALK_CONFIG),
       feishu: resolveEnabled(feishu, DEFAULT_FEISHU_CONFIG),
-      telegram: resolveEnabled(telegram, DEFAULT_TELEGRAM_CONFIG),
+      telegram: resolveEnabled(telegram, DEFAULT_TELEGRAM_OPENCLAW_CONFIG),
       discord: resolveEnabled(discord, DEFAULT_DISCORD_CONFIG),
       nim: resolveEnabled(nim, DEFAULT_NIM_CONFIG),
       xiaomifeng: resolveEnabled(xiaomifeng, DEFAULT_XIAOMIFENG_CONFIG),
@@ -205,7 +242,7 @@ export class IMStore {
       this.setFeishuConfig(config.feishu);
     }
     if (config.telegram) {
-      this.setTelegramConfig(config.telegram);
+      this.setTelegramOpenClawConfig(config.telegram);
     }
     if (config.discord) {
       this.setDiscordConfig(config.discord);
@@ -251,18 +288,6 @@ export class IMStore {
     this.setConfigValue('feishu', { ...current, ...config });
   }
 
-  // ==================== Telegram Config ====================
-
-  getTelegramConfig(): TelegramConfig {
-    const stored = this.getConfigValue<TelegramConfig>('telegram');
-    return { ...DEFAULT_TELEGRAM_CONFIG, ...stored };
-  }
-
-  setTelegramConfig(config: Partial<TelegramConfig>): void {
-    const current = this.getTelegramConfig();
-    this.setConfigValue('telegram', { ...current, ...config });
-  }
-
   // ==================== Discord Config ====================
 
   getDiscordConfig(): DiscordConfig {
@@ -299,6 +324,16 @@ export class IMStore {
     this.setConfigValue('xiaomifeng', { ...current, ...config });
   }
 
+  // ==================== Telegram OpenClaw Config ====================
+
+  getTelegramOpenClawConfig(): TelegramOpenClawConfig {
+    const stored = this.getConfigValue<TelegramOpenClawConfig>('telegramOpenClaw');
+    return { ...DEFAULT_TELEGRAM_OPENCLAW_CONFIG, ...stored };
+  }
+
+  setTelegramOpenClawConfig(config: Partial<TelegramOpenClawConfig>): void {
+    const current = this.getTelegramOpenClawConfig();
+    this.setConfigValue('telegramOpenClaw', { ...current, ...config });
   // ==================== QQ Config ====================
 
   getQQConfig(): QQConfig {
@@ -436,6 +471,19 @@ export class IMStore {
     this.db.run(
       'DELETE FROM im_session_mappings WHERE im_conversation_id = ? AND platform = ?',
       [imConversationId, platform]
+    );
+    this.saveDb();
+  }
+
+  /**
+   * Delete all session mappings that reference a given cowork session ID.
+   * Called when a cowork session is deleted so that the IM conversation
+   * can be re-synced as a fresh session.
+   */
+  deleteSessionMappingByCoworkSessionId(coworkSessionId: string): void {
+    this.db.run(
+      'DELETE FROM im_session_mappings WHERE cowork_session_id = ?',
+      [coworkSessionId]
     );
     this.saveDb();
   }

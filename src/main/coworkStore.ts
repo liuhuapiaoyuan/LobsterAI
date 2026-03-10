@@ -793,6 +793,59 @@ export class CoworkStore {
     };
   }
 
+  /**
+   * Insert a message before an existing message (by shifting sequences).
+   * Used for channel-originated sessions where user messages need to appear
+   * before assistant messages that were created during streaming.
+   */
+  insertMessageBeforeId(sessionId: string, beforeMessageId: string, message: Omit<CoworkMessage, 'id' | 'timestamp'>): CoworkMessage {
+    const id = uuidv4();
+    const now = Date.now();
+
+    // Get the target message's sequence
+    const targetRow = this.db.exec(
+      'SELECT sequence FROM cowork_messages WHERE id = ? AND session_id = ?',
+      [beforeMessageId, sessionId],
+    );
+    const targetSequence = targetRow[0]?.values[0]?.[0] as number | undefined;
+
+    if (targetSequence === undefined) {
+      // Fallback to normal append if the target message is not found
+      return this.addMessage(sessionId, message);
+    }
+
+    // Shift all messages with sequence >= target up by 1
+    this.db.run(
+      'UPDATE cowork_messages SET sequence = sequence + 1 WHERE session_id = ? AND sequence >= ?',
+      [sessionId, targetSequence],
+    );
+
+    // Insert at the target's original sequence
+    this.db.run(`
+      INSERT INTO cowork_messages (id, session_id, type, content, metadata, created_at, sequence)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [
+      id,
+      sessionId,
+      message.type,
+      message.content,
+      message.metadata ? JSON.stringify(message.metadata) : null,
+      now,
+      targetSequence,
+    ]);
+
+    this.db.run('UPDATE cowork_sessions SET updated_at = ? WHERE id = ?', [now, sessionId]);
+    this.saveDb();
+
+    return {
+      id,
+      type: message.type,
+      content: message.content,
+      timestamp: now,
+      metadata: message.metadata,
+    };
+  }
+
   updateMessage(sessionId: string, messageId: string, updates: { content?: string; metadata?: CoworkMessageMetadata }): void {
     const setClauses: string[] = [];
     const values: (string | null)[] = [];

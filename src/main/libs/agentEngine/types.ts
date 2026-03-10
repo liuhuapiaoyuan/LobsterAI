@@ -58,4 +58,5 @@ export interface CoworkRuntime {
   respondToPermission(requestId: string, result: PermissionResult): void;
   isSessionActive(sessionId: string): boolean;
   getSessionConfirmationMode(sessionId: string): 'modal' | 'text' | null;
+  onSessionDeleted?(sessionId: string): void;
 }

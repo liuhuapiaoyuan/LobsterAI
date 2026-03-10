@@ -127,6 +127,14 @@ export class CoworkEngineRouter extends EventEmitter implements CoworkRuntime {
       ?? this.runtimeByEngine.yd_cowork.getSessionConfirmationMode(sessionId);
   }
 
+  onSessionDeleted(sessionId: string): void {
+    this.sessionEngine.delete(sessionId);
+    this.clearRequestEngineBySession(sessionId);
+    for (const runtime of Object.values(this.runtimeByEngine)) {
+      runtime.onSessionDeleted?.(sessionId);
+    }
+  }
+
   handleEngineConfigChanged(nextEngine: CoworkAgentEngine): void {
     if (nextEngine === this.currentEngine) {
       return;

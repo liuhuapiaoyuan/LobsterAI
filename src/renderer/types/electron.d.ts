@@ -366,6 +366,7 @@ interface IElectronAPI {
     onStreamPermission: (callback: (data: { sessionId: string; request: CoworkPermissionRequest }) => void) => () => void;
     onStreamComplete: (callback: (data: { sessionId: string; claudeSessionId: string | null }) => void) => () => void;
     onStreamError: (callback: (data: { sessionId: string; error: string }) => void) => () => void;
+    onSessionsChanged: (callback: () => void) => () => void;
   };
   dialog: {
     selectDirectory: () => Promise<{ success: boolean; path: string | null }>;
@@ -444,6 +445,7 @@ interface IElectronAPI {
 interface IMGatewayConfig {
   dingtalk: DingTalkConfig;
   feishu: FeishuConfig;
+  telegram: TelegramOpenClawConfig;
   qq: QQConfig;
   telegram: TelegramConfig;
   discord: DiscordConfig;
@@ -476,10 +478,29 @@ interface FeishuConfig {
   debug?: boolean;
 }
 
-interface TelegramConfig {
+interface TelegramOpenClawGroupConfig {
+  requireMention?: boolean;
+  allowFrom?: string[];
+  systemPrompt?: string;
+}
+
+interface TelegramOpenClawConfig {
   enabled: boolean;
   botToken: string;
-  debug?: boolean;
+  dmPolicy: 'pairing' | 'allowlist' | 'open' | 'disabled';
+  allowFrom: string[];
+  groupPolicy: 'allowlist' | 'open' | 'disabled';
+  groupAllowFrom: string[];
+  groups: Record<string, TelegramOpenClawGroupConfig>;
+  historyLimit: number;
+  replyToMode: 'off' | 'first' | 'all';
+  linkPreview: boolean;
+  streaming: 'off' | 'partial' | 'block' | 'progress';
+  mediaMaxMb: number;
+  proxy: string;
+  webhookUrl: string;
+  webhookSecret: string;
+  debug: boolean;
 }
 
 interface DiscordConfig {

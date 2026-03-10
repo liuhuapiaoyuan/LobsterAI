@@ -21,6 +21,7 @@ import { ensureSandboxReady, getSandboxStatus, onSandboxProgress } from './libs/
 import { startCoworkOpenAICompatProxy, stopCoworkOpenAICompatProxy, setScheduledTaskDeps } from './libs/coworkOpenAICompatProxy';
 import { OpenClawEngineManager, type OpenClawEngineStatus } from './libs/openclawEngineManager';
 import { OpenClawConfigSync } from './libs/openclawConfigSync';
+import { OpenClawChannelSessionSync } from './libs/openclawChannelSessionSync';
 import { IMGatewayManager, IMPlatform, IMGatewayConfig } from './im';
 import { APP_NAME } from './appConstants';
 import { getSkillServiceManager } from './skillServices';
@@ -671,6 +672,9 @@ const getOpenClawConfigSync = (): OpenClawConfigSync => {
     openClawConfigSync = new OpenClawConfigSync({
       engineManager: getOpenClawEngineManager(),
       getCoworkConfig: () => getCoworkStore().getConfig(),
+      getTelegramOpenClawConfig: () => {
+        try {
+          return getIMGatewayManager()?.getConfig()?.telegram ?? null;
       getDingTalkConfig: () => {
         try {
           return getIMGatewayManager().getConfig().dingtalk;
@@ -838,6 +842,21 @@ const getCoworkEngineRouter = () => {
     }
     if (!openClawRuntimeAdapter) {
       openClawRuntimeAdapter = new OpenClawRuntimeAdapter(getCoworkStore(), getOpenClawEngineManager());
+      // Wire up channel session sync for IM conversations via OpenClaw
+      try {
+        const imManager = getIMGatewayManager();
+        const imStore = imManager.getIMStore();
+        if (imStore) {
+          const channelSessionSync = new OpenClawChannelSessionSync({
+            coworkStore: getCoworkStore(),
+            imStore,
+            getDefaultCwd: () => getCoworkStore().getConfig().workingDirectory || os.homedir(),
+          });
+          openClawRuntimeAdapter.setChannelSessionSync(channelSessionSync);
+        }
+      } catch (error) {
+        console.warn('[Main] Failed to set up channel session sync:', error);
+      }
     }
     coworkEngineRouter = new CoworkEngineRouter({
       getCurrentEngine: resolveCoworkAgentEngine,
@@ -884,6 +903,18 @@ const getIMGatewayManager = () => {
           const status = await ensureOpenClawRunningForCowork();
           if (status.phase !== 'running') {
             throw new Error(status.message || 'AI engine is initializing. Please try again in a moment.');
+          }
+        },
+        isOpenClawEngine: () => resolveCoworkAgentEngine() === 'openclaw',
+        syncOpenClawConfig: async () => {
+          await syncOpenClawConfig({
+            reason: 'im-gateway-telegram-openclaw',
+            restartGatewayIfRunning: true,
+          });
+        },
+        ensureOpenClawGatewayConnected: async () => {
+          if (openClawRuntimeAdapter) {
+            await openClawRuntimeAdapter.connectGatewayIfNeeded();
           }
         },
       }
@@ -1664,6 +1695,20 @@ if (!gotTheLock) {
     try {
       const coworkStoreInstance = getCoworkStore();
       coworkStoreInstance.deleteSession(sessionId);
+      // Clean up IM session mapping so that new channel messages
+      // create a fresh session instead of referencing a deleted one.
+      try {
+        getIMGatewayManager()?.getIMStore()?.deleteSessionMappingByCoworkSessionId(sessionId);
+      } catch {
+        // IM store may not be initialised yet; safe to ignore.
+      }
+      // Notify runtime to purge in-memory caches for this session
+      // so that channel messages can create a fresh session.
+      try {
+        getCoworkEngineRouter().onSessionDeleted(sessionId);
+      } catch {
+        // Router may not be initialised yet; safe to ignore.
+      }
       return { success: true };
     } catch (error) {
       return {
@@ -2235,6 +2280,18 @@ if (!gotTheLock) {
   ipcMain.handle('im:config:set', async (_event, config: Partial<IMGatewayConfig>) => {
     try {
       getIMGatewayManager().setConfig(config);
+
+      // Sync Telegram config to OpenClaw runtime if changed
+      if (config.telegram) {
+        const engineManager = getOpenClawEngineManager();
+        if (engineManager.getStatus().phase === 'running') {
+          await syncOpenClawConfig({
+            reason: 'telegram-openclaw-config-change',
+            restartGatewayIfRunning: true,
+          });
+        }
+      }
+
       // Re-sync OpenClaw config so dingtalk-connector picks up new credentials
       if (config.dingtalk) {
         void syncOpenClawConfig({ reason: 'im-dingtalk-config-change', restartGatewayIfRunning: false });

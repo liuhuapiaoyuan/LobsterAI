@@ -2,6 +2,7 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import type { CoworkConfig, CoworkExecutionMode } from '../coworkStore';
+import type { TelegramOpenClawConfig } from '../im/types';
 import type { DingTalkConfig, FeishuConfig, QQConfig, WecomConfig } from '../im/types';
 import { resolveRawApiConfig } from './claudeSettings';
 import type { OpenClawEngineManager } from './openclawEngineManager';
@@ -51,6 +52,7 @@ export type OpenClawConfigSyncResult = {
 type OpenClawConfigSyncDeps = {
   engineManager: OpenClawEngineManager;
   getCoworkConfig: () => CoworkConfig;
+  getTelegramOpenClawConfig?: () => TelegramOpenClawConfig | null;
   getDingTalkConfig: () => DingTalkConfig | null;
   getFeishuConfig: () => FeishuConfig | null;
   getQQConfig: () => QQConfig | null;
@@ -60,6 +62,7 @@ type OpenClawConfigSyncDeps = {
 export class OpenClawConfigSync {
   private readonly engineManager: OpenClawEngineManager;
   private readonly getCoworkConfig: () => CoworkConfig;
+  private readonly getTelegramOpenClawConfig?: () => TelegramOpenClawConfig | null;
   private readonly getDingTalkConfig: () => DingTalkConfig | null;
   private readonly getFeishuConfig: () => FeishuConfig | null;
   private readonly getQQConfig: () => QQConfig | null;
@@ -68,6 +71,7 @@ export class OpenClawConfigSync {
   constructor(deps: OpenClawConfigSyncDeps) {
     this.engineManager = deps.engineManager;
     this.getCoworkConfig = deps.getCoworkConfig;
+    this.getTelegramOpenClawConfig = deps.getTelegramOpenClawConfig;
     this.getDingTalkConfig = deps.getDingTalkConfig;
     this.getFeishuConfig = deps.getFeishuConfig;
     this.getQQConfig = deps.getQQConfig;
@@ -164,6 +168,9 @@ export class OpenClawConfigSync {
           },
           ...(workspaceDir ? { workspace: workspaceDir } : {}),
         },
+      },
+      session: {
+        dmScope: 'per-channel-peer',
       },
       ...(preinstalledPluginIds.length > 0
         ? {
@@ -262,6 +269,47 @@ export class OpenClawConfigSync {
         },
       } : {}),
     };
+
+    // Sync Telegram OpenClaw channel config
+    const tgConfig = this.getTelegramOpenClawConfig?.();
+    if (tgConfig?.enabled && tgConfig.botToken) {
+      const telegramChannel: Record<string, unknown> = {
+        enabled: true,
+        botToken: tgConfig.botToken,
+        dmPolicy: tgConfig.dmPolicy || 'pairing',
+        allowFrom: (() => {
+          const ids = tgConfig.allowFrom?.length ? [...tgConfig.allowFrom] : [];
+          if (tgConfig.dmPolicy === 'open' && !ids.includes('*')) ids.push('*');
+          return ids;
+        })(),
+        groupPolicy: tgConfig.groupPolicy || 'allowlist',
+        groupAllowFrom: (() => {
+          const ids = tgConfig.groupAllowFrom?.length ? [...tgConfig.groupAllowFrom] : [];
+          if (tgConfig.groupPolicy === 'open' && !ids.includes('*')) ids.push('*');
+          return ids;
+        })(),
+        groups: tgConfig.groups && Object.keys(tgConfig.groups).length > 0
+          ? tgConfig.groups
+          : { '*': { requireMention: true } },
+        historyLimit: tgConfig.historyLimit || 50,
+        replyToMode: tgConfig.replyToMode || 'off',
+        linkPreview: tgConfig.linkPreview ?? true,
+        streaming: tgConfig.streaming || 'off',
+        mediaMaxMb: tgConfig.mediaMaxMb || 5,
+      };
+      if (tgConfig.proxy) {
+        telegramChannel.proxy = tgConfig.proxy;
+      }
+      if (tgConfig.webhookUrl) {
+        telegramChannel.webhookUrl = tgConfig.webhookUrl;
+        if (tgConfig.webhookSecret) {
+          telegramChannel.webhookSecret = tgConfig.webhookSecret;
+        }
+      }
+      managedConfig.channels = { telegram: telegramChannel };
+    } else if (tgConfig) {
+      managedConfig.channels = { telegram: { enabled: false } };
+    }
 
     const nextContent = `${JSON.stringify(managedConfig, null, 2)}\n`;
     let currentContent = '';

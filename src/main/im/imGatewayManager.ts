@@ -1,6 +1,7 @@
 /**
  * IM Gateway Manager
- * Unified manager for DingTalk, Feishu and Telegram gateways
+ * Unified manager for DingTalk, Feishu, Discord, NIM, Xiaomifeng gateways
+ * and Telegram via OpenClaw
  */
 
 import { EventEmitter } from 'events';
@@ -9,7 +10,6 @@ import * as os from 'os';
 import * as fs from 'fs';
 import { DingTalkGateway } from './dingtalkGateway';
 import { FeishuGateway } from './feishuGateway';
-import { TelegramGateway } from './telegramGateway';
 import { DiscordGateway } from './discordGateway';
 import { NimGateway } from './nimGateway';
 import { XiaomifengGateway } from './xiaomifengGateway';
@@ -52,12 +52,14 @@ export interface IMGatewayManagerOptions {
   coworkRuntime?: CoworkRuntime;
   coworkStore?: CoworkStore;
   ensureCoworkReady?: () => Promise<void>;
+  isOpenClawEngine?: () => boolean;
+  syncOpenClawConfig?: () => Promise<void>;
+  ensureOpenClawGatewayConnected?: () => Promise<void>;
 }
 
 export class IMGatewayManager extends EventEmitter {
   private dingtalkGateway: DingTalkGateway;
   private feishuGateway: FeishuGateway;
-  private telegramGateway: TelegramGateway;
   private discordGateway: DiscordGateway;
   private nimGateway: NimGateway;
   private xiaomifengGateway: XiaomifengGateway;
@@ -69,6 +71,9 @@ export class IMGatewayManager extends EventEmitter {
   private getLLMConfig: (() => Promise<any>) | null = null;
   private getSkillsPrompt: (() => Promise<string | null>) | null = null;
   private ensureCoworkReady: (() => Promise<void>) | null = null;
+  private isOpenClawEngine: (() => boolean) | null = null;
+  private syncOpenClawConfig: (() => Promise<void>) | null = null;
+  private ensureOpenClawGatewayConnected: (() => Promise<void>) | null = null;
 
   // Cowork dependencies
   private coworkRuntime: CoworkRuntime | null = null;
@@ -83,7 +88,6 @@ export class IMGatewayManager extends EventEmitter {
     this.imStore = new IMStore(db, saveDb);
     this.dingtalkGateway = new DingTalkGateway();
     this.feishuGateway = new FeishuGateway();
-    this.telegramGateway = new TelegramGateway();
     this.discordGateway = new DiscordGateway();
     this.nimGateway = new NimGateway();
     this.xiaomifengGateway = new XiaomifengGateway();
@@ -96,6 +100,9 @@ export class IMGatewayManager extends EventEmitter {
       this.coworkStore = options.coworkStore;
     }
     this.ensureCoworkReady = options?.ensureCoworkReady ?? null;
+    this.isOpenClawEngine = options?.isOpenClawEngine ?? null;
+    this.syncOpenClawConfig = options?.syncOpenClawConfig ?? null;
+    this.ensureOpenClawGatewayConnected = options?.ensureOpenClawGatewayConnected ?? null;
 
     // Forward gateway events
     this.setupGatewayEventForwarding();
@@ -132,21 +139,6 @@ export class IMGatewayManager extends EventEmitter {
       this.emit('statusChange', this.getStatus());
     });
     this.feishuGateway.on('message', (message: IMMessage) => {
-      this.emit('message', message);
-    });
-
-    // Telegram events
-    this.telegramGateway.on('connected', () => {
-      this.emit('statusChange', this.getStatus());
-    });
-    this.telegramGateway.on('disconnected', () => {
-      this.emit('statusChange', this.getStatus());
-    });
-    this.telegramGateway.on('error', (error) => {
-      this.emit('error', { platform: 'telegram', error });
-      this.emit('statusChange', this.getStatus());
-    });
-    this.telegramGateway.on('message', (message: IMMessage) => {
       this.emit('message', message);
     });
 
@@ -255,11 +247,6 @@ export class IMGatewayManager extends EventEmitter {
       this.feishuGateway.reconnectIfNeeded();
     }
 
-    if (this.telegramGateway && !this.telegramGateway.isConnected()) {
-      console.log('[IMGatewayManager] Reconnecting Telegram...');
-      this.telegramGateway.reconnectIfNeeded();
-    }
-
     if (this.discordGateway && !this.discordGateway.isConnected()) {
       console.log('[IMGatewayManager] Reconnecting Discord...');
       this.discordGateway.reconnectIfNeeded();
@@ -352,7 +339,6 @@ export class IMGatewayManager extends EventEmitter {
 
     this.dingtalkGateway.setMessageCallback(messageHandler);
     this.feishuGateway.setMessageCallback(messageHandler);
-    this.telegramGateway.setMessageCallback(messageHandler);
     this.discordGateway.setMessageCallback(messageHandler);
     this.nimGateway.setMessageCallback(messageHandler);
     this.xiaomifengGateway.setMessageCallback(messageHandler);
@@ -370,8 +356,6 @@ export class IMGatewayManager extends EventEmitter {
         target = this.dingtalkGateway.getNotificationTarget();
       } else if (platform === 'feishu') {
         target = this.feishuGateway.getNotificationTarget();
-      } else if (platform === 'telegram') {
-        target = this.telegramGateway.getNotificationTarget();
       } else if (platform === 'discord') {
         target = this.discordGateway.getNotificationTarget();
       } else if (platform === 'nim') {
@@ -401,8 +385,6 @@ export class IMGatewayManager extends EventEmitter {
         this.dingtalkGateway.setNotificationTarget(target);
       } else if (platform === 'feishu') {
         this.feishuGateway.setNotificationTarget(target);
-      } else if (platform === 'telegram') {
-        this.telegramGateway.setNotificationTarget(target);
       } else if (platform === 'discord') {
         this.discordGateway.setNotificationTarget(target);
       } else if (platform === 'nim') {
@@ -466,6 +448,13 @@ export class IMGatewayManager extends EventEmitter {
   }
 
   /**
+   * Get the underlying IMStore instance (for session mapping operations)
+   */
+  getIMStore(): IMStore {
+    return this.imStore;
+  }
+
+  /**
    * Update configuration
    */
   setConfig(config: Partial<IMGatewayConfig>): void {
@@ -475,11 +464,6 @@ export class IMGatewayManager extends EventEmitter {
     // Update chat handler if settings changed
     if (config.settings) {
       this.updateChatHandler();
-    }
-
-    // Hot-update Telegram config on running gateway
-    if (config.telegram && this.telegramGateway) {
-      this.telegramGateway.updateConfig(config.telegram);
     }
 
     // Hot-update NIM config: if credential fields changed while gateway is connected,
@@ -622,9 +606,21 @@ export class IMGatewayManager extends EventEmitter {
    * Get current status of all gateways
    */
   getStatus(): IMGatewayStatus {
+    // Telegram runs via OpenClaw; reflect enabled+configured state as connected
+    const config = this.getConfig();
+    const tgConfig = config.telegram;
+    const telegramStatus = {
+      connected: Boolean(tgConfig?.enabled && tgConfig.botToken),
+      startedAt: null as number | null,
+      lastError: null as string | null,
+      botUsername: null as string | null,
+      lastInboundAt: null as number | null,
+      lastOutboundAt: null as number | null,
+    };
     return {
       dingtalk: this.dingtalkGateway.getStatus(),
       feishu: this.feishuGateway.getStatus(),
+      telegram: telegramStatus,
       qq: this.qqGateway.getStatus(),
       telegram: this.telegramGateway.getStatus(),
       discord: this.discordGateway.getStatus(),
@@ -641,6 +637,11 @@ export class IMGatewayManager extends EventEmitter {
     platform: IMPlatform,
     configOverride?: Partial<IMGatewayConfig>
   ): Promise<IMConnectivityTestResult> {
+    // Telegram always uses OpenClaw mode
+    if (platform === 'telegram') {
+      return this.testTelegramOpenClawConnectivity(configOverride);
+    }
+
     const config = this.buildMergedConfig(configOverride);
     const checks: IMConnectivityCheck[] = [];
     const testedAt = Date.now();
@@ -799,13 +800,6 @@ export class IMGatewayManager extends EventEmitter {
         message: 'Discord 群聊中仅响应 @机器人的消息。',
         suggestion: '请在频道中使用 @机器人 + 内容触发对话。',
       });
-    } else if (platform === 'telegram') {
-      addCheck({
-        code: 'telegram_privacy_mode_hint',
-        level: 'info',
-        message: 'Telegram 群聊中仅响应 @机器人 或回复机器人的消息。',
-        suggestion: '请先在 @BotFather 中关闭 Privacy Mode（/setprivacy → Disable），然后在群聊中使用 @机器人 + 内容触发对话。',
-      });
     } else if (platform === 'dingtalk') {
       addCheck({
         code: 'dingtalk_bot_membership_hint',
@@ -860,7 +854,12 @@ export class IMGatewayManager extends EventEmitter {
     } else if (platform === 'feishu') {
       await this.feishuGateway.start(config.feishu);
     } else if (platform === 'telegram') {
-      await this.telegramGateway.start(config.telegram);
+      // Telegram always runs via OpenClaw gateway
+      console.log('[IMGatewayManager] Telegram in OpenClaw mode, syncing config instead of starting direct gateway');
+      await this.syncOpenClawConfig?.();
+      // Connect the gateway WebSocket so channel events (e.g. Telegram messages) are received
+      await this.ensureOpenClawGatewayConnected?.();
+      return;
     } else if (platform === 'discord') {
       await this.discordGateway.start(config.discord);
     } else if (platform === 'nim') {
@@ -886,7 +885,10 @@ export class IMGatewayManager extends EventEmitter {
     } else if (platform === 'feishu') {
       await this.feishuGateway.stop();
     } else if (platform === 'telegram') {
-      await this.telegramGateway.stop();
+      // Telegram always runs via OpenClaw gateway
+      console.log('[IMGatewayManager] Telegram in OpenClaw mode, syncing disabled config');
+      await this.syncOpenClawConfig?.();
+      return;
     } else if (platform === 'discord') {
       await this.discordGateway.stop();
     } else if (platform === 'nim') {
@@ -922,11 +924,11 @@ export class IMGatewayManager extends EventEmitter {
       }
     }
 
-    if (config.telegram.enabled && config.telegram.botToken) {
+    if (config.telegram?.enabled && config.telegram.botToken) {
       try {
         await this.startGateway('telegram');
       } catch (error: any) {
-        console.error(`[IMGatewayManager] Failed to start Telegram: ${error.message}`);
+        console.error(`[IMGatewayManager] Failed to start Telegram (OpenClaw): ${error.message}`);
       }
     }
 
@@ -978,7 +980,6 @@ export class IMGatewayManager extends EventEmitter {
     await Promise.all([
       this.dingtalkGateway.stop(),
       this.feishuGateway.stop(),
-      this.telegramGateway.stop(),
       this.discordGateway.stop(),
       this.nimGateway.stop(),
       this.xiaomifengGateway.stop(),
@@ -1002,7 +1003,9 @@ export class IMGatewayManager extends EventEmitter {
       return this.dingtalkGateway.isConnected();
     }
     if (platform === 'telegram') {
-      return this.telegramGateway.isConnected();
+      // Telegram runs via OpenClaw; consider it connected when enabled and configured
+      const config = this.getConfig();
+      return Boolean(config.telegram?.enabled && config.telegram.botToken);
     }
     if (platform === 'discord') {
       return this.discordGateway.isConnected();
@@ -1038,8 +1041,6 @@ export class IMGatewayManager extends EventEmitter {
         await this.dingtalkGateway.sendNotification(text);
       } else if (platform === 'feishu') {
         await this.feishuGateway.sendNotification(text);
-      } else if (platform === 'telegram') {
-        await this.telegramGateway.sendNotification(text);
       } else if (platform === 'discord') {
         await this.discordGateway.sendNotification(text);
       } else if (platform === 'nim') {
@@ -1069,8 +1070,6 @@ export class IMGatewayManager extends EventEmitter {
         await this.dingtalkGateway.sendNotificationWithMedia(text);
       } else if (platform === 'feishu') {
         await this.feishuGateway.sendNotificationWithMedia(text);
-      } else if (platform === 'telegram') {
-        await this.telegramGateway.sendNotificationWithMedia(text);
       } else if (platform === 'discord') {
         await this.discordGateway.sendNotificationWithMedia(text);
       } else if (platform === 'nim') {
@@ -1087,6 +1086,85 @@ export class IMGatewayManager extends EventEmitter {
       console.error(`[IMGatewayManager] Failed to send notification with media via ${platform}:`, error.message);
       return false;
     }
+  }
+
+  /**
+   * Test Telegram connectivity when running via OpenClaw runtime.
+   * Validates bot token via Telegram API (same auth probe as direct mode).
+   */
+  private async testTelegramOpenClawConnectivity(
+    configOverride?: Partial<IMGatewayConfig>
+  ): Promise<IMConnectivityTestResult> {
+    const checks: IMConnectivityCheck[] = [];
+    const testedAt = Date.now();
+    const platform: IMPlatform = 'telegram';
+
+    // Resolve the Telegram config (now TelegramOpenClawConfig type)
+    const mergedConfig = this.buildMergedConfig(configOverride);
+    const tgConfig = mergedConfig.telegram;
+    const botToken = tgConfig?.botToken || '';
+
+    // Check 1: Bot token present
+    if (!botToken) {
+      checks.push({
+        code: 'missing_credentials',
+        level: 'fail',
+        message: '缺少必要配置项: botToken',
+        suggestion: '请补全 Bot Token 后重新测试连通性。',
+      });
+      return { platform, testedAt, verdict: 'fail', checks };
+    }
+
+    // Check 2: Auth probe via Telegram API (getMe)
+    try {
+      const response = await this.withTimeout(
+        fetchJsonWithTimeout<TelegramGetMeResponse>(
+          `https://api.telegram.org/bot${botToken}/getMe`,
+          {},
+          CONNECTIVITY_TIMEOUT_MS
+        ),
+        CONNECTIVITY_TIMEOUT_MS,
+        '鉴权探测超时'
+      );
+      if (response?.ok && response.result?.username) {
+        checks.push({
+          code: 'auth_check',
+          level: 'pass',
+          message: `Telegram Bot 鉴权通过: @${response.result.username}`,
+        });
+      } else {
+        checks.push({
+          code: 'auth_check',
+          level: 'fail',
+          message: `Telegram Bot 鉴权失败: ${response?.description || '未知错误'}`,
+          suggestion: '请检查 Bot Token 是否正确。',
+        });
+        return { platform, testedAt, verdict: 'fail', checks };
+      }
+    } catch (error: any) {
+      checks.push({
+        code: 'auth_check',
+        level: 'fail',
+        message: `Telegram Bot 鉴权失败: ${error.message}`,
+        suggestion: '请检查 Bot Token 是否正确，且网络通畅。',
+      });
+      return { platform, testedAt, verdict: 'fail', checks };
+    }
+
+    // Check 3: OpenClaw Gateway running
+    checks.push({
+      code: 'gateway_running',
+      level: 'info',
+      message: 'Telegram 通过 OpenClaw 运行时运行，Bot 将在 OpenClaw Gateway 启动后自动连接。',
+    });
+
+    const verdict: IMConnectivityVerdict = checks.some(c => c.level === 'fail')
+      ? 'fail'
+      : checks.some(c => c.level === 'warn')
+        ? 'warn'
+        : 'pass';
+
+    return { platform, testedAt, verdict, checks };
   }
 
   private buildMergedConfig(configOverride?: Partial<IMGatewayConfig>): IMGatewayConfig {
@@ -1179,19 +1257,6 @@ export class IMGatewayManager extends EventEmitter {
       return `飞书鉴权通过（Bot: ${botName}）。`;
     }
 
-    if (platform === 'telegram') {
-      const response = await fetchJsonWithTimeout<TelegramGetMeResponse>(
-        `https://api.telegram.org/bot${config.telegram.botToken}/getMe`,
-        {},
-        CONNECTIVITY_TIMEOUT_MS
-      );
-      if (!response.ok) {
-        const description = response.description || 'unknown error';
-        throw new Error(description);
-      }
-      const username = response.result?.username ? `@${response.result.username}` : 'unknown';
-      return `Telegram 鉴权通过（Bot: ${username}）。`;
-    }
     if (platform === 'nim') {
       // Use an isolated temporary NimGateway instance so the probe never
       // touches the main gateway's state and never fires onMessageCallback.

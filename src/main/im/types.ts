@@ -88,11 +88,29 @@ export interface FeishuMessageContext {
 
 // ==================== Telegram Types ====================
 
-export interface TelegramConfig {
+export interface TelegramOpenClawGroupConfig {
+  requireMention?: boolean;
+  allowFrom?: string[];
+  systemPrompt?: string;
+}
+
+export interface TelegramOpenClawConfig {
   enabled: boolean;
   botToken: string;
-  allowedUserIds?: string[];
-  debug?: boolean;
+  dmPolicy: 'pairing' | 'allowlist' | 'open' | 'disabled';
+  allowFrom: string[];
+  groupPolicy: 'allowlist' | 'open' | 'disabled';
+  groupAllowFrom: string[];
+  groups: Record<string, TelegramOpenClawGroupConfig>;
+  historyLimit: number;
+  replyToMode: 'off' | 'first' | 'all';
+  linkPreview: boolean;
+  streaming: 'off' | 'partial' | 'block' | 'progress';
+  mediaMaxMb: number;
+  proxy: string;
+  webhookUrl: string;
+  webhookSecret: string;
+  debug: boolean;
 }
 
 export interface TelegramGatewayStatus {
@@ -211,6 +229,7 @@ export type IMPlatform = 'dingtalk' | 'feishu' | 'qq' | 'telegram' | 'discord' |
 export interface IMGatewayConfig {
   dingtalk: DingTalkConfig;
   feishu: FeishuConfig;
+  telegram: TelegramOpenClawConfig;
   qq: QQConfig;
   telegram: TelegramConfig;
   discord: DiscordConfig;
@@ -325,6 +344,7 @@ export type IMConnectivityCheckCode =
   | 'telegram_privacy_mode_hint'
   | 'dingtalk_bot_membership_hint'
   | 'nim_p2p_only_hint'
+  | 'openclaw_gateway_not_running';
   | 'qq_guild_mention_hint';
 
 export interface IMConnectivityCheck {
@@ -366,13 +386,6 @@ export const DEFAULT_FEISHU_CONFIG: FeishuConfig = {
   debug: true,
 };
 
-export const DEFAULT_TELEGRAM_CONFIG: TelegramConfig = {
-  enabled: false,
-  botToken: '',
-  allowedUserIds: [],
-  debug: true,
-};
-
 export const DEFAULT_DISCORD_CONFIG: DiscordConfig = {
   enabled: false,
   botToken: '',
@@ -399,6 +412,22 @@ export const DEFAULT_XIAOMIFENG_CONFIG: XiaomifengConfig = {
   debug: true,
 };
 
+export const DEFAULT_TELEGRAM_OPENCLAW_CONFIG: TelegramOpenClawConfig = {
+  enabled: false,
+  botToken: '',
+  dmPolicy: 'pairing',
+  allowFrom: [],
+  groupPolicy: 'allowlist',
+  groupAllowFrom: [],
+  groups: { '*': { requireMention: true } },
+  historyLimit: 50,
+  replyToMode: 'off',
+  linkPreview: true,
+  streaming: 'off',
+  mediaMaxMb: 5,
+  proxy: '',
+  webhookUrl: '',
+  webhookSecret: '',
 export const DEFAULT_QQ_CONFIG: QQConfig = {
   enabled: false,
   appId: '',
@@ -421,6 +450,7 @@ export const DEFAULT_IM_SETTINGS: IMSettings = {
 export const DEFAULT_IM_CONFIG: IMGatewayConfig = {
   dingtalk: DEFAULT_DINGTALK_CONFIG,
   feishu: DEFAULT_FEISHU_CONFIG,
+  telegram: DEFAULT_TELEGRAM_OPENCLAW_CONFIG,
   qq: DEFAULT_QQ_CONFIG,
   telegram: DEFAULT_TELEGRAM_CONFIG,
   discord: DEFAULT_DISCORD_CONFIG,
@@ -443,15 +473,6 @@ export const DEFAULT_FEISHU_STATUS: FeishuGatewayStatus = {
   startedAt: null,
   botOpenId: null,
   error: null,
-  lastInboundAt: null,
-  lastOutboundAt: null,
-};
-
-export const DEFAULT_TELEGRAM_STATUS: TelegramGatewayStatus = {
-  connected: false,
-  startedAt: null,
-  lastError: null,
-  botUsername: null,
   lastInboundAt: null,
   lastOutboundAt: null,
 };
@@ -504,6 +525,14 @@ export const DEFAULT_WECOM_STATUS: WecomGatewayStatus = {
 export const DEFAULT_IM_STATUS: IMGatewayStatus = {
   dingtalk: DEFAULT_DINGTALK_STATUS,
   feishu: DEFAULT_FEISHU_STATUS,
+  telegram: {
+    connected: false,
+    startedAt: null,
+    lastError: null,
+    botUsername: null,
+    lastInboundAt: null,
+    lastOutboundAt: null,
+  },
   qq: DEFAULT_QQ_STATUS,
   telegram: DEFAULT_TELEGRAM_STATUS,
   discord: DEFAULT_DISCORD_STATUS,

@@ -129,6 +129,16 @@ class CoworkService {
       store.dispatch(updateSessionStatus({ sessionId, status: 'error' }));
     });
     this.streamListenerCleanups.push(errorCleanup);
+
+    // Sessions changed listener (new channel sessions discovered by polling)
+    const sessionsChangedCleanup = cowork.onSessionsChanged(() => {
+      console.log('[CoworkService] onSessionsChanged: received IPC event, refreshing session list...');
+      void this.loadSessions().then(() => {
+        const state = store.getState().cowork;
+        console.log('[CoworkService] onSessionsChanged: loadSessions complete, total sessions:', state.sessions.length);
+      });
+    });
+    this.streamListenerCleanups.push(sessionsChangedCleanup);
   }
 
   private setupOpenClawEngineListeners(): void {

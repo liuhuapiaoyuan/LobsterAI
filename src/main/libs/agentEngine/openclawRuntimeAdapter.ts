@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
-import { app } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import { EventEmitter } from 'events';
+import * as path from 'path';
 import { pathToFileURL } from 'url';
 import type { PermissionResult } from '@anthropic-ai/claude-agent-sdk';
 import type { CoworkMessage, CoworkStore } from '../../coworkStore';
@@ -15,6 +16,7 @@ import type {
   CoworkStartOptions,
   PermissionRequest,
 } from './types';
+import type { OpenClawChannelSessionSync } from '../openclawChannelSessionSync';
 
 const OPENCLAW_SESSION_PREFIX = 'lobsterai:';
 const OPENCLAW_GATEWAY_TOOL_EVENTS_CAP = 'tool-events';
@@ -97,6 +99,22 @@ type ActiveTurn = {
   toolResultMessageIdByToolCallId: Map<string, string>;
   toolResultTextByToolCallId: Map<string, string>;
   stopRequested: boolean;
+  /** True while async user message prefetch is in progress for channel sessions. */
+  pendingUserSync: boolean;
+  /** Chat events buffered while pendingUserSync is true. */
+  bufferedChatPayloads: BufferedChatEvent[];
+  /** Agent events buffered while pendingUserSync is true. */
+  bufferedAgentPayloads: BufferedAgentEvent[];
+};
+
+type BufferedChatEvent = {
+  payload: unknown;
+  seq: number | undefined;
+};
+
+type BufferedAgentEvent = {
+  payload: unknown;
+  seq: number | undefined;
 };
 
 type PendingApprovalEntry = {
@@ -181,6 +199,7 @@ const extractTextBlocksAndSignals = (
     }
     if (typeof block.type === 'string' && block.type !== 'thinking') {
       sawNonTextContentBlocks = true;
+      console.log('[Debug:extractBlocks] non-text block type:', block.type, 'content:', JSON.stringify(block).slice(0, 500));
     }
   }
 
@@ -188,6 +207,76 @@ const extractTextBlocksAndSignals = (
     textBlocks,
     sawNonTextContentBlocks,
   };
+};
+
+/**
+ * Extract file paths from assistant "message" tool calls in chat.history.
+ * Only scans messages after the last user message (current turn).
+ * The model sends files to Telegram using: toolCall { name: "message", arguments: { action: "send", filePath: "..." } }
+ */
+const extractSentFilePathsFromHistory = (messages: unknown[]): string[] => {
+  // Find the last user message index to scope to current turn only
+  let lastUserIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    if (isRecord(msg) && (msg as Record<string, unknown>).role === 'user') {
+      lastUserIdx = i;
+      break;
+    }
+  }
+
+  const filePaths: string[] = [];
+  const seen = new Set<string>();
+  const startIdx = lastUserIdx >= 0 ? lastUserIdx + 1 : 0;
+  for (let i = startIdx; i < messages.length; i++) {
+    const msg = messages[i];
+    if (!isRecord(msg)) continue;
+    const role = typeof msg.role === 'string' ? msg.role.trim().toLowerCase() : '';
+    if (role !== 'assistant') continue;
+    if (!Array.isArray(msg.content)) continue;
+    for (const block of msg.content as Array<Record<string, unknown>>) {
+      if (!isRecord(block)) continue;
+      if (block.type !== 'toolCall' || block.name !== 'message') continue;
+      const args = block.arguments;
+      if (!isRecord(args)) continue;
+      const filePath = typeof args.filePath === 'string' ? args.filePath.trim() : '';
+      if (filePath && !seen.has(filePath)) {
+        seen.add(filePath);
+        filePaths.push(filePath);
+      }
+    }
+  }
+  return filePaths;
+};
+
+/**
+ * Extract and concatenate all assistant text from the current turn in chat.history.
+ * The current turn starts after the last user message.
+ */
+const extractCurrentTurnAssistantText = (messages: unknown[]): string => {
+  // Find the last user message index (turn boundary)
+  let lastUserIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    if (isRecord(msg) && (msg as Record<string, unknown>).role === 'user') {
+      lastUserIdx = i;
+      break;
+    }
+  }
+
+  const startIdx = lastUserIdx >= 0 ? lastUserIdx + 1 : 0;
+  const textParts: string[] = [];
+  for (let i = startIdx; i < messages.length; i++) {
+    const msg = messages[i];
+    if (!isRecord(msg)) continue;
+    const role = typeof msg.role === 'string' ? msg.role.trim().toLowerCase() : '';
+    if (role !== 'assistant') continue;
+    const text = extractMessageText(msg).trim();
+    if (text) {
+      textParts.push(text);
+    }
+  }
+  return textParts.join('\n\n');
 };
 
 const isDroppedBoundaryTextBlockSubset = (streamedTextBlocks: string[], finalTextBlocks: string[]): boolean => {
@@ -377,12 +466,134 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   private gatewayClientVersion: string | null = null;
   private gatewayClientEntryPath: string | null = null;
   private gatewayReadyPromise: Promise<void> | null = null;
+  private channelSessionSync: OpenClawChannelSessionSync | null = null;
+  private readonly knownChannelSessionIds = new Set<string>();
+  private readonly fullySyncedSessions = new Set<string>();
+  /** Channel sessionKeys explicitly deleted by the user. Polling will not re-create these. */
+  private readonly deletedChannelKeys = new Set<string>();
+  private channelPollingTimer: ReturnType<typeof setInterval> | null = null;
+
+  private static readonly CHANNEL_POLL_INTERVAL_MS = 30_000;
+  private static readonly FULL_HISTORY_SYNC_LIMIT = 50;
   private browserPrewarmAttempted = false;
 
   constructor(store: CoworkStore, engineManager: OpenClawEngineManager) {
     super();
     this.store = store;
     this.engineManager = engineManager;
+  }
+
+  setChannelSessionSync(sync: OpenClawChannelSessionSync): void {
+    this.channelSessionSync = sync;
+  }
+
+  /**
+   * Ensure the gateway WebSocket client is connected.
+   * Called when IM channels (e.g. Telegram) are enabled in OpenClaw mode
+   * so that channel-originated events can be received without waiting
+   * for a LobsterAI-initiated session.
+   */
+  async connectGatewayIfNeeded(): Promise<void> {
+    if (this.gatewayClient) {
+      console.log('[ChannelSync] connectGatewayIfNeeded: gateway client already exists, skipping');
+      return;
+    }
+    console.log('[ChannelSync] connectGatewayIfNeeded: no gateway client, initializing...');
+    try {
+      await this.ensureGatewayClientReady();
+      console.log('[ChannelSync] connectGatewayIfNeeded: gateway client ready, starting channel polling');
+      this.startChannelPolling();
+    } catch (error) {
+      console.error('[ChannelSync] connectGatewayIfNeeded: failed to initialize gateway client:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Start periodic polling for channel-originated sessions (e.g. Telegram).
+   * Uses the gateway `sessions.list` RPC to discover sessions that may not
+   * have been delivered via WebSocket events.
+   */
+  startChannelPolling(): void {
+    if (!this.channelSessionSync) {
+      console.warn('[ChannelSync] startChannelPolling: no channelSessionSync set, skipping');
+      return;
+    }
+    // Already running
+    if (this.channelPollingTimer) return;
+
+    console.log('[ChannelSync] startChannelPolling: starting periodic channel session discovery');
+    // Run once immediately, then at interval
+    void this.pollChannelSessions();
+    this.channelPollingTimer = setInterval(() => {
+      void this.pollChannelSessions();
+    }, OpenClawRuntimeAdapter.CHANNEL_POLL_INTERVAL_MS);
+  }
+
+  stopChannelPolling(): void {
+    if (this.channelPollingTimer) {
+      clearInterval(this.channelPollingTimer);
+      this.channelPollingTimer = null;
+    }
+  }
+
+  private async pollChannelSessions(): Promise<void> {
+    if (!this.gatewayClient || !this.channelSessionSync) {
+      console.warn('[ChannelSync] pollChannelSessions: skipped — gatewayClient:', !!this.gatewayClient, 'channelSessionSync:', !!this.channelSessionSync);
+      return;
+    }
+    try {
+      const params = { activeMinutes: 60, limit: 50 };
+      console.log('[ChannelSync] pollChannelSessions: calling sessions.list with', JSON.stringify(params));
+      const result = await this.gatewayClient.request('sessions.list', params);
+      const sessions = (result as Record<string, unknown>)?.sessions;
+      if (!Array.isArray(sessions)) {
+        console.warn('[ChannelSync] pollChannelSessions: sessions.list returned non-array sessions:', typeof sessions, 'full result keys:', Object.keys(result as Record<string, unknown>));
+        return;
+      }
+      console.log('[ChannelSync] pollChannelSessions: got', sessions.length, 'sessions, keys:', sessions.map((s: Record<string, unknown>) => s?.key).join(', '));
+      let hasNew = false;
+      let channelCount = 0;
+      const newSessionsToSync: Array<{ sessionId: string; sessionKey: string }> = [];
+      for (const row of sessions) {
+        const key = typeof row?.key === 'string' ? row.key : '';
+        if (!key) continue;
+        const isChannel = this.channelSessionSync.isChannelSessionKey(key);
+        if (!isChannel) continue;
+        // Skip keys that were explicitly deleted by the user — only real-time events re-create them
+        if (this.deletedChannelKeys.has(key)) continue;
+        channelCount++;
+        // Use resolveOrCreateSession so new channel sessions are auto-created
+        const sessionId = this.channelSessionSync.resolveOrCreateSession(key);
+        console.log('[ChannelSync] pollChannelSessions: channel key=', key, '→ sessionId=', sessionId, 'alreadyKnown=', sessionId ? this.knownChannelSessionIds.has(sessionId) : 'n/a');
+        if (sessionId && !this.knownChannelSessionIds.has(sessionId)) {
+          this.knownChannelSessionIds.add(sessionId);
+          this.sessionIdBySessionKey.set(key, sessionId);
+          hasNew = true;
+          // Queue full history sync for newly discovered sessions
+          if (!this.fullySyncedSessions.has(sessionId)) {
+            newSessionsToSync.push({ sessionId, sessionKey: key });
+          }
+        }
+      }
+      console.log('[ChannelSync] pollChannelSessions: found', channelCount, 'channel sessions, hasNew=', hasNew);
+      if (hasNew) {
+        let notified = 0;
+        for (const win of BrowserWindow.getAllWindows()) {
+          if (!win.isDestroyed()) {
+            win.webContents.send('cowork:sessions:changed');
+            notified++;
+          }
+        }
+        console.log('[ChannelSync] pollChannelSessions: notified', notified, 'renderer windows via cowork:sessions:changed');
+      }
+      // Sync full history for newly discovered sessions
+      for (const { sessionId, sessionKey } of newSessionsToSync) {
+        await this.syncFullChannelHistory(sessionId, sessionKey);
+      }
+    } catch (error) {
+      console.error('[ChannelSync] pollChannelSessions: error during polling:', error);
+    }
   }
 
   override on<U extends keyof CoworkRuntimeEvents>(
@@ -526,6 +737,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
 
     this.store.updateSession(sessionId, { status: 'running' });
     await this.ensureGatewayClientReady();
+    this.startChannelPolling();
 
     const runId = randomUUID();
     const outboundMessage = await this.buildOutboundPrompt(
@@ -553,6 +765,9 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
       toolResultMessageIdByToolCallId: new Map(),
       toolResultTextByToolCallId: new Map(),
       stopRequested: false,
+      pendingUserSync: false,
+      bufferedChatPayloads: [],
+      bufferedAgentPayloads: [],
     });
     this.sessionIdByRunId.set(runId, sessionId);
 
@@ -702,13 +917,16 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   }
 
   private async ensureGatewayClientReady(): Promise<void> {
+    console.log('[ChannelSync] ensureGatewayClientReady: starting engine gateway...');
     const engineStatus = await this.engineManager.startGateway();
+    console.log('[ChannelSync] ensureGatewayClientReady: engine phase=', engineStatus.phase, 'message=', engineStatus.message);
     if (engineStatus.phase !== 'running') {
       const message = engineStatus.message || 'OpenClaw engine is not running.';
       throw new Error(message);
     }
 
     const connection = this.engineManager.getGatewayConnectionInfo();
+    console.log('[ChannelSync] ensureGatewayClientReady: connection info — url=', connection.url ? '✓' : '✗', 'token=', connection.token ? '✓' : '✗', 'version=', connection.version, 'clientEntryPath=', connection.clientEntryPath ? '✓' : '✗');
     const missing: string[] = [];
     if (!connection.url) missing.push('url');
     if (!connection.token) missing.push('token');
@@ -721,6 +939,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     const needsNewClient = !this.gatewayClient
       || this.gatewayClientVersion !== connection.version
       || this.gatewayClientEntryPath !== connection.clientEntryPath;
+    console.log('[ChannelSync] ensureGatewayClientReady: needsNewClient=', needsNewClient, 'hasExistingClient=', !!this.gatewayClient);
     if (!needsNewClient && this.gatewayReadyPromise) {
       await waitWithTimeout(this.gatewayReadyPromise, GATEWAY_READY_TIMEOUT_MS);
       return;
@@ -731,6 +950,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     if (this.gatewayReadyPromise) {
       await waitWithTimeout(this.gatewayReadyPromise, GATEWAY_READY_TIMEOUT_MS);
     }
+    console.log('[ChannelSync] ensureGatewayClientReady: gateway client created and ready');
 
     // Fire-and-forget: pre-warm the browser so Chrome is already running
     // before the AI agent calls the browser tool (avoids 15s startup timeout).
@@ -807,6 +1027,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   }
 
   private stopGatewayClient(): void {
+    this.stopChannelPolling();
     try {
       this.gatewayClient?.stop();
     } catch (error) {
@@ -816,6 +1037,8 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     this.gatewayClientVersion = null;
     this.gatewayClientEntryPath = null;
     this.gatewayReadyPromise = null;
+    this.channelSessionSync?.clearCache();
+    this.knownChannelSessionIds.clear();
     this.browserPrewarmAttempted = false;
   }
 
@@ -952,6 +1175,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   }
 
   private handleGatewayEvent(event: GatewayEventFrame): void {
+    console.log('[Debug:handleGatewayEvent] event:', event.event, 'seq:', event.seq);
     if (event.event === 'chat') {
       this.handleChatEvent(event.payload, event.seq);
       return;
@@ -977,34 +1201,85 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     const agentPayload = payload as AgentEventPayload;
     const runId = typeof agentPayload.runId === 'string' ? agentPayload.runId.trim() : '';
     const sessionKey = typeof agentPayload.sessionKey === 'string' ? agentPayload.sessionKey.trim() : '';
+    const stream = typeof agentPayload.stream === 'string' ? agentPayload.stream : '';
+    console.log('[Debug:handleAgentEvent] entry — sessionKey:', sessionKey, 'runId:', runId, 'stream:', stream, 'seq:', seq);
+
+    const sessionIdByRunId = runId ? this.sessionIdByRunId.get(runId) : undefined;
+    const sessionIdBySessionKey = sessionKey ? this.sessionIdBySessionKey.get(sessionKey) : undefined;
+    let sessionId = sessionIdByRunId ?? sessionIdBySessionKey;
+    console.log('[Debug:handleAgentEvent] lookup — byRunId:', sessionIdByRunId, 'bySessionKey:', sessionIdBySessionKey, 'resolved:', sessionId);
+
+    // Re-create ActiveTurn for channel session follow-up turns
+    if (sessionId && !this.activeTurns.has(sessionId) && sessionKey) {
+      console.log('[Debug:handleAgentEvent] re-creating ActiveTurn for follow-up turn, sessionId:', sessionId);
+      this.ensureActiveTurn(sessionId, sessionKey, runId);
+    }
+
+    // Try to resolve channel-originated sessions (e.g. Telegram via OpenClaw)
+    if (!sessionId && sessionKey && this.channelSessionSync) {
+      const channelSessionId = this.channelSessionSync.resolveOrCreateSession(sessionKey)
+        || this.channelSessionSync.resolveOrCreateMainAgentSession(sessionKey);
+      console.log('[Debug:handleAgentEvent] channel resolve — channelSessionId:', channelSessionId);
+      if (channelSessionId) {
+        // If this key was previously deleted, allow re-creation but skip history sync
+        if (this.deletedChannelKeys.has(sessionKey)) {
+          this.deletedChannelKeys.delete(sessionKey);
+          this.fullySyncedSessions.add(channelSessionId);
+          console.log('[Debug:handleAgentEvent] re-created after delete, skipping history sync for:', sessionKey);
+        }
+        this.sessionIdBySessionKey.set(sessionKey, channelSessionId);
+        sessionId = channelSessionId;
+        this.ensureActiveTurn(channelSessionId, sessionKey, runId);
+      }
+    }
+
+    if (!sessionId) {
+      console.log('[Debug:handleAgentEvent] no sessionId, dropping event. runId:', runId, 'sessionKey:', sessionKey);
+      if (runId) {
+        this.enqueuePendingAgentEvent(runId, agentPayload, seq);
+      }
+      return;
+    }
+    if (sessionIdByRunId && sessionIdBySessionKey && sessionIdByRunId !== sessionIdBySessionKey) {
+      console.log('[Debug:handleAgentEvent] sessionId mismatch, dropping. byRunId:', sessionIdByRunId, 'bySessionKey:', sessionIdBySessionKey);
+      return;
+    }
+
+    const turn = this.activeTurns.get(sessionId);
+    if (!turn) {
+      console.log('[Debug:handleAgentEvent] no active turn for sessionId:', sessionId);
+      return;
+    }
+
+    if (sessionKey && !runId && turn.sessionKey !== sessionKey) {
+      console.log('[Debug:handleAgentEvent] sessionKey mismatch, dropping. event:', sessionKey, 'turn:', turn.sessionKey);
+      return;
+    }
+
+    if (runId) {
+      const mappedSessionId = this.sessionIdByRunId.get(runId);
+      if (mappedSessionId && mappedSessionId !== sessionId) {
+        console.log('[Debug:handleAgentEvent] runId mapped to different session, dropping. mapped:', mappedSessionId, 'current:', sessionId);
+        return;
+      }
+      this.bindRunIdToTurn(sessionId, runId);
+    }
+
+    // Buffer agent events while user messages are being prefetched for channel sessions.
+    // Must be checked BEFORE seq dedup so that replayed events are not dropped.
+    if (turn.pendingUserSync) {
+      console.log('[Debug:handleAgentEvent] buffering agent event (pendingUserSync), sessionId:', sessionId, 'buffered:', turn.bufferedAgentPayloads.length + 1);
+      turn.bufferedAgentPayloads.push({ payload: agentPayload, seq });
+      return;
+    }
+
+    // Sequence-based dedup (placed after buffer check to match handleChatEvent pattern)
     if (typeof seq === 'number' && Number.isFinite(seq) && runId) {
       const lastSeq = this.lastAgentSeqByRunId.get(runId);
       if (lastSeq !== undefined && seq <= lastSeq) {
         return;
       }
       this.lastAgentSeqByRunId.set(runId, seq);
-    }
-
-    const sessionIdByRunId = runId ? this.sessionIdByRunId.get(runId) : undefined;
-    const sessionIdBySessionKey = sessionKey ? this.sessionIdBySessionKey.get(sessionKey) : undefined;
-    const sessionId = sessionIdByRunId ?? sessionIdBySessionKey;
-    if (!sessionId) {
-      if (runId) {
-        this.enqueuePendingAgentEvent(runId, agentPayload, seq);
-      }
-      return;
-    }
-    if (sessionIdByRunId && sessionIdBySessionKey && sessionIdByRunId !== sessionIdBySessionKey) return;
-
-    const turn = this.activeTurns.get(sessionId);
-    if (!turn) return;
-
-    if (sessionKey && !runId && turn.sessionKey !== sessionKey) return;
-
-    if (runId) {
-      const mappedSessionId = this.sessionIdByRunId.get(runId);
-      if (mappedSessionId && mappedSessionId !== sessionId) return;
-      this.bindRunIdToTurn(sessionId, runId);
     }
 
     this.dispatchAgentEvent(sessionId, turn, {
@@ -1016,6 +1291,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   private dispatchAgentEvent(sessionId: string, turn: ActiveTurn, agentPayload: AgentEventPayload): void {
     const stream = typeof agentPayload.stream === 'string' ? agentPayload.stream.trim() : '';
     const hasToolShape = isRecord(agentPayload.data) && typeof agentPayload.data.toolCallId === 'string';
+    console.log('[Debug:dispatchAgentEvent] sessionId:', sessionId, 'stream:', stream, 'hasToolShape:', hasToolShape);
     if (stream === 'tool' || stream === 'tools' || (!stream && hasToolShape)) {
       if (Array.isArray(agentPayload.data)) {
         for (const entry of agentPayload.data) {
@@ -1248,11 +1524,29 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     const state = chatPayload.state;
     if (!state) return;
 
+    const chatRunId = typeof chatPayload.runId === 'string' ? chatPayload.runId.trim() : '';
+    const chatSessionKey = typeof chatPayload.sessionKey === 'string' ? chatPayload.sessionKey.trim() : '';
+    console.log('[Debug:handleChatEvent] entry — state:', state, 'sessionKey:', chatSessionKey, 'runId:', chatRunId, 'seq:', seq);
+
     const sessionId = this.resolveSessionIdFromChatPayload(chatPayload);
-    if (!sessionId) return;
+    if (!sessionId) {
+      console.log('[Debug:handleChatEvent] no sessionId resolved, dropping event');
+      return;
+    }
+    console.log('[Debug:handleChatEvent] resolved sessionId:', sessionId);
 
     const turn = this.activeTurns.get(sessionId);
-    if (!turn) return;
+    if (!turn) {
+      console.log('[Debug:handleChatEvent] no active turn for sessionId:', sessionId);
+      return;
+    }
+
+    // Buffer chat events while user messages are being prefetched for channel sessions
+    if (turn.pendingUserSync) {
+      console.log('[Debug:handleChatEvent] buffering chat event (pendingUserSync), sessionId:', sessionId, 'buffered:', turn.bufferedChatPayloads.length + 1);
+      turn.bufferedChatPayloads.push({ payload, seq });
+      return;
+    }
 
     const runId = typeof chatPayload.runId === 'string' ? chatPayload.runId.trim() : '';
     if (typeof seq === 'number' && Number.isFinite(seq) && runId) {
@@ -1398,6 +1692,19 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     const previousSegmentText = turn.currentAssistantSegmentText;
 
     this.updateTurnTextState(turn, payload.message, { protectBoundaryDrops: true });
+
+    // Debug: log when non-text content blocks first appear during streaming
+    if (turn.sawNonTextContentBlocks && !previousSawNonTextContentBlocks) {
+      console.log('[Debug:handleChatDelta] non-text content blocks detected during streaming, sessionId:', sessionId);
+      if (isRecord(payload.message) && Array.isArray((payload.message as Record<string, unknown>).content)) {
+        const content = (payload.message as Record<string, unknown>).content as Array<Record<string, unknown>>;
+        for (const block of content) {
+          if (isRecord(block) && typeof block.type === 'string' && block.type !== 'text' && block.type !== 'thinking') {
+            console.log('[Debug:handleChatDelta] non-text block:', JSON.stringify(block).slice(0, 1000));
+          }
+        }
+      }
+    }
     const streamedText = turn.currentText;
     if (previousText && streamedText && streamedText.length < previousText.length) {
       turn.currentText = previousText;
@@ -1531,7 +1838,18 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
 
     const request = typedPayload.request;
     const sessionKey = typeof request.sessionKey === 'string' ? request.sessionKey.trim() : '';
-    const sessionId = sessionKey ? this.sessionIdBySessionKey.get(sessionKey) : undefined;
+    let sessionId = sessionKey ? this.sessionIdBySessionKey.get(sessionKey) : undefined;
+
+    // Try to resolve channel-originated sessions for approval requests
+    if (!sessionId && sessionKey && this.channelSessionSync) {
+      const channelSessionId = this.channelSessionSync.resolveOrCreateSession(sessionKey)
+        || this.channelSessionSync.resolveOrCreateMainAgentSession(sessionKey);
+      if (channelSessionId) {
+        this.sessionIdBySessionKey.set(sessionKey, channelSessionId);
+        sessionId = channelSessionId;
+      }
+    }
+
     if (!sessionId) {
       return;
     }
@@ -1568,23 +1886,55 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   private resolveSessionIdFromChatPayload(payload: ChatEventPayload): string | null {
     const runId = typeof payload.runId === 'string' ? payload.runId.trim() : '';
     if (runId && this.sessionIdByRunId.has(runId)) {
-      return this.sessionIdByRunId.get(runId) ?? null;
+      const sid = this.sessionIdByRunId.get(runId) ?? null;
+      console.log('[Debug:resolveSessionId] resolved by runId:', runId, '→', sid);
+      return sid;
     }
 
     const sessionKey = typeof payload.sessionKey === 'string' ? payload.sessionKey.trim() : '';
     if (sessionKey && this.sessionIdBySessionKey.has(sessionKey)) {
       const sessionId = this.sessionIdBySessionKey.get(sessionKey) ?? null;
-      if (sessionId && runId) {
-        this.bindRunIdToTurn(sessionId, runId);
+      console.log('[Debug:resolveSessionId] resolved by sessionKey:', sessionKey, '→', sessionId);
+      if (sessionId) {
+        // Re-create ActiveTurn for channel session follow-up turns
+        this.ensureActiveTurn(sessionId, sessionKey, runId);
+        if (runId) {
+          this.bindRunIdToTurn(sessionId, runId);
+        }
       }
       return sessionId;
     }
+
+    // Try to resolve channel-originated sessions
+    if (sessionKey && this.channelSessionSync) {
+      const channelSessionId = this.channelSessionSync.resolveOrCreateSession(sessionKey)
+        || this.channelSessionSync.resolveOrCreateMainAgentSession(sessionKey);
+      console.log('[Debug:resolveSessionId] channel resolve — sessionKey:', sessionKey, '→', channelSessionId);
+      if (channelSessionId) {
+        // If this key was previously deleted, allow re-creation but skip history sync
+        if (this.deletedChannelKeys.has(sessionKey)) {
+          this.deletedChannelKeys.delete(sessionKey);
+          this.fullySyncedSessions.add(channelSessionId);
+          console.log('[Debug:resolveSessionId] re-created after delete, skipping history sync for:', sessionKey);
+        }
+        this.sessionIdBySessionKey.set(sessionKey, channelSessionId);
+        this.ensureActiveTurn(channelSessionId, sessionKey, runId);
+        if (runId) {
+          this.bindRunIdToTurn(channelSessionId, runId);
+        }
+        return channelSessionId;
+      }
+    }
+
+    console.log('[Debug:resolveSessionId] failed — runId:', runId, 'sessionKey:', sessionKey);
     return null;
   }
 
   private async syncFinalAssistantWithHistory(sessionId: string, turn: ActiveTurn): Promise<void> {
+    console.log('[Debug:syncFinal] start — sessionId:', sessionId, 'sessionKey:', turn.sessionKey);
     const client = this.gatewayClient;
     if (!client) {
+      console.log('[Debug:syncFinal] no gateway client, skipping');
       return;
     }
 
@@ -1593,24 +1943,82 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
         sessionKey: turn.sessionKey,
         limit: FINAL_HISTORY_SYNC_LIMIT,
       });
+      const msgCount = Array.isArray(history?.messages) ? history.messages.length : 0;
+      console.log('[Debug:syncFinal] chat.history returned', msgCount, 'messages');
       if (!Array.isArray(history?.messages) || history.messages.length === 0) {
         return;
       }
 
+      // Debug: dump all history message roles and content types
+      for (let i = 0; i < history.messages.length; i++) {
+        const m = history.messages[i] as Record<string, unknown>;
+        if (!isRecord(m)) continue;
+        const r = typeof m.role === 'string' ? m.role : '?';
+        let contentSummary: string;
+        if (Array.isArray(m.content)) {
+          const types = (m.content as Array<Record<string, unknown>>).filter(isRecord).map((b) => b.type);
+          contentSummary = `blocks:[${types.join(',')}]`;
+        } else if (typeof m.content === 'string') {
+          contentSummary = `text(${(m.content as string).length})`;
+        } else {
+          contentSummary = String(typeof m.content);
+        }
+        console.log(`[Debug:syncFinal:history] [${i}] role=${r} content=${contentSummary}`);
+        // Print non-text blocks for tool/assistant messages
+        if (r !== 'user' && Array.isArray(m.content)) {
+          for (const block of m.content as Array<Record<string, unknown>>) {
+            if (isRecord(block) && typeof block.type === 'string' && block.type !== 'text' && block.type !== 'thinking') {
+              console.log(`[Debug:syncFinal:history] [${i}] block:`, JSON.stringify(block).slice(0, 800));
+            }
+          }
+        }
+      }
+
+      // For channel sessions, sync user messages that may have been missed during
+      // prefetch (gateway history might not include in-progress run messages).
+      const isChannel = this.channelSessionSync
+        && !turn.sessionKey.startsWith('lobsterai:')
+        && this.channelSessionSync.isChannelSessionKey(turn.sessionKey);
+      if (isChannel) {
+        const latestOnly = this.fullySyncedSessions.has(sessionId);
+        this.syncChannelUserMessages(sessionId, history.messages, latestOnly);
+      }
+
       let canonicalText = '';
-      for (let index = history.messages.length - 1; index >= 0; index -= 1) {
-        const message = history.messages[index];
-        if (!isRecord(message)) continue;
-        const role = typeof message.role === 'string' ? message.role.trim().toLowerCase() : '';
-        if (role !== 'assistant') continue;
-        canonicalText = extractMessageText(message).trim();
-        if (canonicalText) {
-          break;
+      if (isChannel) {
+        // For channel sessions, merge all assistant text from the current turn
+        canonicalText = extractCurrentTurnAssistantText(history.messages);
+      } else {
+        // For non-channel sessions, use the last assistant message with text
+        for (let index = history.messages.length - 1; index >= 0; index -= 1) {
+          const message = history.messages[index];
+          if (!isRecord(message)) continue;
+          const role = typeof message.role === 'string' ? message.role.trim().toLowerCase() : '';
+          if (role !== 'assistant') continue;
+          canonicalText = extractMessageText(message).trim();
+          if (canonicalText) {
+            break;
+          }
         }
       }
       if (!canonicalText) {
+        console.log('[Debug:syncFinal] no canonical assistant text found in history');
         return;
       }
+
+      // For channel sessions, append file paths from "message" tool calls as clickable links
+      if (isChannel) {
+        const sentFilePaths = extractSentFilePathsFromHistory(history.messages);
+        if (sentFilePaths.length > 0) {
+          console.log('[Debug:syncFinal] found sent file paths:', sentFilePaths);
+          const fileLinks = sentFilePaths
+            .map((fp) => `[${path.basename(fp)}](${fp})`)
+            .join('\n');
+          canonicalText = `${canonicalText}\n\n${fileLinks}`;
+        }
+      }
+
+      console.log('[Debug:syncFinal] canonicalText length:', canonicalText.length, 'assistantMessageId:', turn.assistantMessageId);
 
       const canonicalSegmentText = this.resolveAssistantSegmentText(turn, canonicalText);
       turn.currentText = canonicalText;
@@ -1654,6 +2062,171 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     }
   }
 
+  /**
+   * Sync user messages from gateway chat.history that haven't been added to the local store yet.
+   * Used for channel-originated sessions (e.g. Telegram) where user messages arrive via the
+   * gateway rather than the LobsterAI UI.
+   *
+   * Called at the start of a new turn (via prefetchChannelUserMessages) so that user messages
+   * appear before the assistant's streaming response. Both chat and agent events are buffered
+   * during prefetch, so the replay order matches direct cowork sessions.
+   */
+  private syncChannelUserMessages(sessionId: string, historyMessages: unknown[], latestOnly = false): void {
+    console.log('[Debug:syncChannelUserMessages] sessionId:', sessionId, 'historyMessages:', historyMessages.length, 'latestOnly:', latestOnly);
+    const session = this.store.getSession(sessionId);
+
+    // Count existing user messages in store by text
+    const storeTextCounts = new Map<string, number>();
+    if (session) {
+      for (const msg of session.messages) {
+        if (msg.type === 'user') {
+          const t = msg.content.trim();
+          storeTextCounts.set(t, (storeTextCounts.get(t) ?? 0) + 1);
+        }
+      }
+    }
+    console.log('[Debug:syncChannelUserMessages] store user text entries:', storeTextCounts.size);
+
+    // Collect ALL user messages from history (in order)
+    const historyUserTexts: string[] = [];
+    for (const message of historyMessages) {
+      if (!isRecord(message)) continue;
+      const role = typeof message.role === 'string' ? message.role.trim().toLowerCase() : '';
+      if (role !== 'user') continue;
+      const text = extractMessageText(message).trim();
+      if (text) {
+        historyUserTexts.push(text);
+      }
+    }
+    console.log('[Debug:syncChannelUserMessages] history user texts:', historyUserTexts.length);
+
+    // When latestOnly is true (e.g. session re-created after deletion),
+    // only sync the last user message — the one that triggered this turn.
+    if (latestOnly && historyUserTexts.length > 1) {
+      const lastText = historyUserTexts[historyUserTexts.length - 1];
+      historyUserTexts.length = 0;
+      historyUserTexts.push(lastText);
+      console.log('[Debug:syncChannelUserMessages] latestOnly: trimmed to last user message');
+    }
+
+    // Add new messages in history order, skipping ones already in store
+    const remainingCounts = new Map<string, number>(storeTextCounts);
+    let syncedCount = 0;
+    for (const text of historyUserTexts) {
+      const remaining = remainingCounts.get(text) ?? 0;
+      if (remaining > 0) {
+        remainingCounts.set(text, remaining - 1);
+        continue;
+      }
+      const userMessage = this.store.addMessage(sessionId, {
+        type: 'user',
+        content: text,
+        metadata: {},
+      });
+      this.emit('message', sessionId, userMessage);
+      syncedCount++;
+    }
+    console.log('[Debug:syncChannelUserMessages] synced', syncedCount, 'new user messages');
+  }
+
+  private getUserMessageCount(sessionId: string): number {
+    const session = this.store.getSession(sessionId);
+    if (!session) return 0;
+    return session.messages.filter((m: CoworkMessage) => m.type === 'user').length;
+  }
+
+  /**
+   * Sync full conversation history for a newly discovered channel session.
+   * Adds both user and assistant messages to the local CoworkStore in order.
+   * Skipped if the session has already been fully synced.
+   */
+  private async syncFullChannelHistory(sessionId: string, sessionKey: string): Promise<void> {
+    if (this.fullySyncedSessions.has(sessionId)) return;
+    this.fullySyncedSessions.add(sessionId);
+
+    const client = this.gatewayClient;
+    if (!client) return;
+
+    console.log('[ChannelSync] syncFullChannelHistory: start — sessionId:', sessionId, 'sessionKey:', sessionKey);
+    try {
+      const history = await client.request<{ messages?: unknown[] }>('chat.history', {
+        sessionKey,
+        limit: OpenClawRuntimeAdapter.FULL_HISTORY_SYNC_LIMIT,
+      });
+      if (!Array.isArray(history?.messages) || history.messages.length === 0) {
+        console.log('[ChannelSync] syncFullChannelHistory: no messages in history');
+        return;
+      }
+
+      const session = this.store.getSession(sessionId);
+      // Build set of existing message texts to avoid duplicates
+      const existingUserTexts = new Map<string, number>();
+      const existingAssistantTexts = new Map<string, number>();
+      if (session) {
+        for (const msg of session.messages) {
+          if (msg.type === 'user') {
+            const t = msg.content.trim();
+            existingUserTexts.set(t, (existingUserTexts.get(t) ?? 0) + 1);
+          } else if (msg.type === 'assistant') {
+            const t = msg.content.trim();
+            existingAssistantTexts.set(t, (existingAssistantTexts.get(t) ?? 0) + 1);
+          }
+        }
+      }
+
+      let syncedCount = 0;
+      for (const message of history.messages) {
+        if (!isRecord(message)) continue;
+        const role = typeof message.role === 'string' ? message.role.trim().toLowerCase() : '';
+        const text = extractMessageText(message).trim();
+        if (!text) continue;
+
+        if (role === 'user') {
+          const remaining = existingUserTexts.get(text) ?? 0;
+          if (remaining > 0) {
+            existingUserTexts.set(text, remaining - 1);
+            continue;
+          }
+          const userMsg = this.store.addMessage(sessionId, {
+            type: 'user',
+            content: text,
+            metadata: {},
+          });
+          this.emit('message', sessionId, userMsg);
+          syncedCount++;
+        } else if (role === 'assistant') {
+          const remaining = existingAssistantTexts.get(text) ?? 0;
+          if (remaining > 0) {
+            existingAssistantTexts.set(text, remaining - 1);
+            continue;
+          }
+          const assistantMsg = this.store.addMessage(sessionId, {
+            type: 'assistant',
+            content: text,
+            metadata: { isStreaming: false, isFinal: true },
+          });
+          this.emit('message', sessionId, assistantMsg);
+          syncedCount++;
+        }
+      }
+
+      console.log('[ChannelSync] syncFullChannelHistory: synced', syncedCount, 'messages for sessionId:', sessionId);
+
+      // Notify renderer to refresh
+      if (syncedCount > 0) {
+        for (const win of BrowserWindow.getAllWindows()) {
+          if (!win.isDestroyed()) {
+            win.webContents.send('cowork:sessions:changed');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[ChannelSync] syncFullChannelHistory: error:', error);
+      // Remove from synced set so retry is possible
+      this.fullySyncedSessions.delete(sessionId);
+    }
+  }
+
   private clearPendingApprovalsBySession(sessionId: string): void {
     for (const [requestId, pending] of this.pendingApprovals.entries()) {
       if (pending.sessionId === sessionId) {
@@ -1674,6 +2247,196 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     }
     this.activeTurns.delete(sessionId);
     this.lastSystemPromptBySession.delete(sessionId);
+  }
+
+  /**
+   * Called when a session is deleted from the store.
+   * Purges all in-memory references so that new channel messages
+   * with the same sessionKey can create a fresh session.
+   */
+  onSessionDeleted(sessionId: string): void {
+    // Remove sessionIdBySessionKey entries pointing to this session
+    const removedKeys: string[] = [];
+    for (const [key, id] of this.sessionIdBySessionKey.entries()) {
+      if (id === sessionId) {
+        this.sessionIdBySessionKey.delete(key);
+        removedKeys.push(key);
+      }
+    }
+
+    // Suppress polling re-creation for deleted channel keys.
+    // Only real-time events (new IM messages) will re-create the session.
+    for (const key of removedKeys) {
+      this.deletedChannelKeys.add(key);
+    }
+
+    // Allow polling to rediscover channel sessions
+    this.knownChannelSessionIds.delete(sessionId);
+
+    // Allow full history re-sync when session is re-created
+    this.fullySyncedSessions.delete(sessionId);
+
+    // Clean up active turn and related run-id mappings
+    this.cleanupSessionTurn(sessionId);
+
+    // Clean up pending approvals, bridged state, confirmation mode
+    this.clearPendingApprovalsBySession(sessionId);
+    this.bridgedSessions.delete(sessionId);
+    this.confirmationModeBySession.delete(sessionId);
+
+    // Propagate to channel session sync
+    if (this.channelSessionSync) {
+      this.channelSessionSync.onSessionDeleted(sessionId);
+    }
+  }
+
+  /**
+   * Ensure an ActiveTurn exists for a session. Used for channel-originated sessions
+   * where new turns arrive after the previous turn was cleaned up.
+   */
+  private ensureActiveTurn(sessionId: string, sessionKey: string, runId: string): void {
+    if (this.activeTurns.has(sessionId)) return;
+    const turnRunId = runId || randomUUID();
+    const isChannel = this.channelSessionSync
+      && !sessionKey.startsWith('lobsterai:')
+      && this.channelSessionSync.isChannelSessionKey(sessionKey);
+    console.log('[Debug:ensureActiveTurn] creating turn — sessionId:', sessionId, 'sessionKey:', sessionKey, 'runId:', turnRunId, 'isChannel:', !!isChannel, 'pendingUserSync:', !!isChannel);
+    this.activeTurns.set(sessionId, {
+      sessionId,
+      sessionKey,
+      runId: turnRunId,
+      knownRunIds: new Set(runId ? [runId] : [turnRunId]),
+      assistantMessageId: null,
+      committedAssistantText: '',
+      currentAssistantSegmentText: '',
+      currentText: '',
+      currentContentText: '',
+      currentContentBlocks: [],
+      sawNonTextContentBlocks: false,
+      textStreamMode: 'unknown',
+      toolUseMessageIdByToolCallId: new Map(),
+      toolResultMessageIdByToolCallId: new Map(),
+      toolResultTextByToolCallId: new Map(),
+      stopRequested: false,
+      pendingUserSync: !!isChannel,
+      bufferedChatPayloads: [],
+      bufferedAgentPayloads: [],
+    });
+    if (runId) {
+      this.sessionIdByRunId.set(runId, sessionId);
+    }
+    this.store.updateSession(sessionId, { status: 'running' });
+
+    // For channel sessions, prefetch user messages before streaming starts
+    if (isChannel) {
+      void this.prefetchChannelUserMessages(sessionId, sessionKey);
+    }
+  }
+
+  /**
+   * Prefetch user messages from gateway history at the start of a channel session turn.
+   * This ensures user messages appear before the assistant's streaming response.
+   * Delta/final events are buffered until this completes.
+   */
+  private async prefetchChannelUserMessages(sessionId: string, sessionKey: string): Promise<void> {
+    console.log('[Debug:prefetch] start — sessionId:', sessionId, 'sessionKey:', sessionKey);
+
+    const MAX_ATTEMPTS = 3;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      try {
+        const client = this.gatewayClient;
+        if (!client) {
+          console.log('[Debug:prefetch] no gateway client available');
+          break;
+        }
+
+        const history = await client.request<{ messages?: unknown[] }>('chat.history', {
+          sessionKey,
+          limit: FINAL_HISTORY_SYNC_LIMIT,
+        });
+        const msgCount = Array.isArray(history?.messages) ? history.messages.length : 0;
+        console.log('[Debug:prefetch] chat.history returned', msgCount, 'messages (attempt', attempt, ')');
+
+        if (Array.isArray(history?.messages) && history.messages.length > 0) {
+          const latestOnly = this.fullySyncedSessions.has(sessionId);
+          const beforeCount = this.getUserMessageCount(sessionId);
+          this.syncChannelUserMessages(sessionId, history.messages, latestOnly);
+          const afterCount = this.getUserMessageCount(sessionId);
+          const newUserMessages = afterCount - beforeCount;
+          console.log('[Debug:prefetch] synced user messages:', newUserMessages, '(before:', beforeCount, 'after:', afterCount, ')');
+
+          if (newUserMessages > 0) {
+            break; // Successfully synced new user messages
+          }
+
+          // No new user messages but buffered events indicate agent is processing → history may lag
+          const turn = this.activeTurns.get(sessionId);
+          if (turn && (turn.bufferedChatPayloads.length > 0 || turn.bufferedAgentPayloads.length > 0)) {
+            if (attempt < MAX_ATTEMPTS - 1) {
+              console.log('[Debug:prefetch] no new user messages but have buffered events, retrying after delay...');
+              await new Promise((resolve) => setTimeout(resolve, 300));
+              continue;
+            }
+          }
+          break; // No buffered events or max attempts reached
+        } else {
+          // Empty history — session may have just been created
+          const turn = this.activeTurns.get(sessionId);
+          if (turn && (turn.bufferedChatPayloads.length > 0 || turn.bufferedAgentPayloads.length > 0)) {
+            if (attempt < MAX_ATTEMPTS - 1) {
+              console.log('[Debug:prefetch] empty history but have buffered events, retrying after delay...');
+              await new Promise((resolve) => setTimeout(resolve, 300));
+              continue;
+            }
+          }
+          break;
+        }
+      } catch (error) {
+        console.warn('[OpenClawRuntime] prefetchChannelUserMessages attempt', attempt, 'failed:', error);
+        if (attempt < MAX_ATTEMPTS - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+      }
+    }
+
+    const turn = this.activeTurns.get(sessionId);
+    if (!turn) {
+      console.log('[Debug:prefetch] turn was removed during prefetch, cannot replay. sessionId:', sessionId);
+      return;
+    }
+    turn.pendingUserSync = false;
+
+    const chatBuffered = turn.bufferedChatPayloads.length;
+    const agentBuffered = turn.bufferedAgentPayloads.length;
+    console.log('[Debug:prefetch] replaying buffered events — chat:', chatBuffered, 'agent:', agentBuffered);
+
+    // Merge and replay both chat and agent events in sequence order
+    // so that tool use/result messages are interleaved with assistant text segments
+    // just like in direct cowork sessions.
+    const allBuffered: Array<{ type: 'chat' | 'agent'; payload: unknown; seq?: number }> = [];
+    for (const event of turn.bufferedChatPayloads) {
+      allBuffered.push({ type: 'chat', payload: event.payload, seq: event.seq });
+    }
+    for (const event of turn.bufferedAgentPayloads) {
+      allBuffered.push({ type: 'agent', payload: event.payload, seq: event.seq });
+    }
+    turn.bufferedChatPayloads = [];
+    turn.bufferedAgentPayloads = [];
+
+    allBuffered.sort((a, b) => {
+      const seqA = typeof a.seq === 'number' ? a.seq : Infinity;
+      const seqB = typeof b.seq === 'number' ? b.seq : Infinity;
+      return seqA - seqB;
+    });
+
+    for (const event of allBuffered) {
+      if (event.type === 'chat') {
+        this.handleChatEvent(event.payload, event.seq);
+      } else {
+        this.handleAgentEvent(event.payload, event.seq);
+      }
+    }
+    console.log('[Debug:prefetch] replay complete, sessionId:', sessionId);
   }
 
   private bindRunIdToTurn(sessionId: string, runId: string): void {
