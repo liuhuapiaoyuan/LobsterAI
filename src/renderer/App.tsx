@@ -439,19 +439,6 @@ const App: React.FC = () => {
     return unsubscribe;
   }, [handleNewChat]);
 
-  // 监听定时任务查看会话事件
-  useEffect(() => {
-    const handleViewSession = async (event: Event) => {
-      const { sessionId } = (event as CustomEvent).detail;
-      if (sessionId) {
-        setMainView('cowork');
-        await coworkService.loadSession(sessionId);
-      }
-    };
-    window.addEventListener('scheduledTask:viewSession', handleViewSession);
-    return () => window.removeEventListener('scheduledTask:viewSession', handleViewSession);
-  }, []);
-
   useEffect(() => {
     if (!isInitialized) return;
 

@@ -33,6 +33,7 @@ contextBridge.exposeInMainWorld('electron', {
     delete: (id: string) => ipcRenderer.invoke('mcp:delete', id),
     setEnabled: (options: { id: string; enabled: boolean }) => ipcRenderer.invoke('mcp:setEnabled', options),
     fetchMarketplace: () => ipcRenderer.invoke('mcp:fetchMarketplace'),
+    refreshBridge: () => ipcRenderer.invoke('mcp:refreshBridge'),
   },
   permissions: {
     checkCalendar: () => ipcRenderer.invoke('permissions:checkCalendar'),
@@ -323,6 +324,12 @@ contextBridge.exposeInMainWorld('electron', {
     countRuns: (taskId: string) => ipcRenderer.invoke('scheduledTask:countRuns', taskId),
     listAllRuns: (limit?: number, offset?: number) =>
       ipcRenderer.invoke('scheduledTask:listAllRuns', limit, offset),
+    resolveSession: (sessionKey: string) =>
+      ipcRenderer.invoke('scheduledTask:resolveSession', sessionKey),
+
+    // Delivery targets
+    listDeliveryTargets: (platform: string) =>
+      ipcRenderer.invoke('scheduledTask:listDeliveryTargets', platform),
 
     // Stream event listeners
     onStatusUpdate: (callback: (data: any) => void) => {
@@ -334,6 +341,11 @@ contextBridge.exposeInMainWorld('electron', {
       const handler = (_event: any, data: any) => callback(data);
       ipcRenderer.on('scheduledTask:runUpdate', handler);
       return () => ipcRenderer.removeListener('scheduledTask:runUpdate', handler);
+    },
+    onRefresh: (callback: () => void) => {
+      const handler = () => callback();
+      ipcRenderer.on('scheduledTask:refresh', handler);
+      return () => ipcRenderer.removeListener('scheduledTask:refresh', handler);
     },
   },
   networkStatus: {

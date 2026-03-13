@@ -250,6 +250,7 @@ interface IElectronAPI {
     delete: (id: string) => Promise<{ success: boolean; servers?: McpServerConfigIPC[]; error?: string }>;
     setEnabled: (options: { id: string; enabled: boolean }) => Promise<{ success: boolean; servers?: McpServerConfigIPC[]; error?: string }>;
     fetchMarketplace: () => Promise<{ success: boolean; data?: McpMarketplaceData; error?: string }>;
+    refreshBridge: () => Promise<{ success: boolean; tools: number; error?: string }>;
   };
   api: {
     fetch: (options: {
@@ -407,19 +408,30 @@ interface IElectronAPI {
     onMessageReceived: (callback: (message: IMMessage) => void) => () => void;
   };
   scheduledTasks: {
-    list: () => Promise<any>;
-    get: (id: string) => Promise<any>;
-    create: (input: any) => Promise<any>;
-    update: (id: string, input: any) => Promise<any>;
-    delete: (id: string) => Promise<any>;
-    toggle: (id: string, enabled: boolean) => Promise<any>;
-    runManually: (id: string) => Promise<any>;
-    stop: (id: string) => Promise<any>;
-    listRuns: (taskId: string, limit?: number, offset?: number) => Promise<any>;
-    countRuns: (taskId: string) => Promise<any>;
-    listAllRuns: (limit?: number, offset?: number) => Promise<any>;
-    onStatusUpdate: (callback: (data: any) => void) => () => void;
-    onRunUpdate: (callback: (data: any) => void) => () => void;
+    list: () => Promise<{ success: boolean; tasks?: import('./scheduledTask').ScheduledTask[]; error?: string }>;
+    get: (id: string) => Promise<{ success: boolean; task?: import('./scheduledTask').ScheduledTask; error?: string }>;
+    create: (input: import('./scheduledTask').ScheduledTaskInput) => Promise<{ success: boolean; task?: import('./scheduledTask').ScheduledTask; error?: string }>;
+    update: (id: string, input: Partial<import('./scheduledTask').ScheduledTaskInput>) => Promise<{ success: boolean; task?: import('./scheduledTask').ScheduledTask; error?: string }>;
+    delete: (id: string) => Promise<{ success: boolean; error?: string }>;
+    toggle: (id: string, enabled: boolean) => Promise<{ success: boolean; task?: import('./scheduledTask').ScheduledTask; warning?: string; error?: string }>;
+    runManually: (id: string) => Promise<{ success: boolean; error?: string }>;
+    stop: (id: string) => Promise<{ success: boolean; error?: string }>;
+    listRuns: (taskId: string, limit?: number, offset?: number) => Promise<{ success: boolean; runs?: import('./scheduledTask').ScheduledTaskRun[]; error?: string }>;
+    countRuns: (taskId: string) => Promise<{ success: boolean; count?: number; error?: string }>;
+    listAllRuns: (limit?: number, offset?: number) => Promise<{ success: boolean; runs?: import('./scheduledTask').ScheduledTaskRunWithName[]; error?: string }>;
+    resolveSession: (sessionKey: string) => Promise<{
+      success: boolean;
+      session?: import('./cowork').CoworkSession | null;
+      error?: string;
+    }>;
+    listDeliveryTargets: (platform: string) => Promise<{
+      success: boolean;
+      targets?: Array<{ value: string; label: string; source: string }>;
+      error?: string;
+    }>;
+    onStatusUpdate: (callback: (data: import('./scheduledTask').ScheduledTaskStatusEvent) => void) => () => void;
+    onRunUpdate: (callback: (data: import('./scheduledTask').ScheduledTaskRunEvent) => void) => () => void;
+    onRefresh: (callback: () => void) => () => void;
   };
   permissions: {
     checkCalendar: () => Promise<{ success: boolean; status?: string; error?: string; autoRequested?: boolean }>;

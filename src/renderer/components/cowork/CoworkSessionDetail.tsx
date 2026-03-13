@@ -407,29 +407,29 @@ const toAbsolutePathFromCwd = (filePath: string, cwd: string): string => {
   return `${cwd.replace(/\/$/, '')}/${filePath.replace(/^\.\//, '')}`;
 };
 
-type ToolGroupItem = {
+export type ToolGroupItem = {
   type: 'tool_group';
   toolUse: CoworkMessage;
   toolResult?: CoworkMessage | null;
 };
 
-type DisplayItem =
+export type DisplayItem =
   | { type: 'message'; message: CoworkMessage }
   | ToolGroupItem;
 
-type AssistantTurnItem =
+export type AssistantTurnItem =
   | { type: 'assistant'; message: CoworkMessage }
   | { type: 'system'; message: CoworkMessage }
   | { type: 'tool_group'; group: ToolGroupItem }
   | { type: 'tool_result'; message: CoworkMessage };
 
-type ConversationTurn = {
+export type ConversationTurn = {
   id: string;
   userMessage: CoworkMessage | null;
   assistantItems: AssistantTurnItem[];
 };
 
-const buildDisplayItems = (messages: CoworkMessage[]): DisplayItem[] => {
+export const buildDisplayItems = (messages: CoworkMessage[]): DisplayItem[] => {
   const items: DisplayItem[] = [];
   const groupsByToolUseId = new Map<string, ToolGroupItem>();
   let pendingAdjacentGroup: ToolGroupItem | null = null;
@@ -475,7 +475,7 @@ const buildDisplayItems = (messages: CoworkMessage[]): DisplayItem[] => {
   return items;
 };
 
-const buildConversationTurns = (items: DisplayItem[]): ConversationTurn[] => {
+export const buildConversationTurns = (items: DisplayItem[]): ConversationTurn[] => {
   const turns: ConversationTurn[] = [];
   let currentTurn: ConversationTurn | null = null;
   let orphanIndex = 0;
@@ -562,7 +562,7 @@ const isVisibleAssistantTurnItem = (item: AssistantTurnItem): boolean => {
 const getVisibleAssistantItems = (assistantItems: AssistantTurnItem[]): AssistantTurnItem[] =>
   assistantItems.filter(isVisibleAssistantTurnItem);
 
-const hasRenderableAssistantContent = (turn: ConversationTurn): boolean => (
+export const hasRenderableAssistantContent = (turn: ConversationTurn): boolean => (
   getVisibleAssistantItems(turn.assistantItems).length > 0
 );
 
@@ -836,7 +836,7 @@ const CopyButton: React.FC<{
   );
 };
 
-const UserMessageItem: React.FC<{ message: CoworkMessage; skills: Skill[] }> = React.memo(({ message, skills }) => {
+export const UserMessageItem: React.FC<{ message: CoworkMessage; skills: Skill[] }> = React.memo(({ message, skills }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
 
@@ -1062,7 +1062,7 @@ const ThinkingBlock: React.FC<{
   );
 };
 
-const AssistantTurnBlock: React.FC<{
+export const AssistantTurnBlock: React.FC<{
   turn: ConversationTurn;
   resolveLocalFilePath?: (href: string, text: string) => string | null;
   mapDisplayText?: (value: string) => string;

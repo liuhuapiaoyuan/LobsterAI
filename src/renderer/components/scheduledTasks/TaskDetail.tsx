@@ -4,27 +4,12 @@ import { RootState } from '../../store';
 import { setViewMode } from '../../store/slices/scheduledTaskSlice';
 import { scheduledTaskService } from '../../services/scheduledTask';
 import { i18nService } from '../../services/i18n';
-import type { ScheduledTask, Schedule } from '../../types/scheduledTask';
+import type { ScheduledTask } from '../../types/scheduledTask';
 import TaskRunHistory from './TaskRunHistory';
+import { formatScheduleLabel } from './utils';
 import { PlayIcon } from '@heroicons/react/24/outline';
 import PencilIcon from '../icons/PencilIcon';
 import TrashIcon from '../icons/TrashIcon';
-
-function formatScheduleLabel(schedule: Schedule): string {
-  switch (schedule.type) {
-    case 'at':
-      return `${i18nService.t('scheduledTasksScheduleAtLabel')}: ${schedule.datetime ? new Date(schedule.datetime).toLocaleString() : '-'}`;
-    case 'interval': {
-      const unitKey = schedule.unit === 'minutes' ? 'scheduledTasksFormIntervalMinutes' :
-        schedule.unit === 'hours' ? 'scheduledTasksFormIntervalHours' : 'scheduledTasksFormIntervalDays';
-      return `${i18nService.t('scheduledTasksScheduleEvery')} ${schedule.value ?? 0} ${i18nService.t(unitKey)}`;
-    }
-    case 'cron':
-      return `${i18nService.t('scheduledTasksScheduleCronLabel')}: ${schedule.expression ?? ''}`;
-    default:
-      return '';
-  }
-}
 
 interface TaskDetailProps {
   task: ScheduledTask;
@@ -154,6 +139,11 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onRequestDelete }) => {
                     i18nService.t(`scheduledTasksFormNotify${p.charAt(0).toUpperCase() + p.slice(1)}`)
                   ).join(', ')
                 : i18nService.t('scheduledTasksFormNotifyNone')}
+              {task.deliveryTo && (
+                <span className="ml-1 text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary">
+                  ({task.deliveryTo})
+                </span>
+              )}
             </div>
           </div>
         </div>

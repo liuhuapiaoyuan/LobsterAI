@@ -4,7 +4,7 @@ import { EventEmitter } from 'events';
 import * as path from 'path';
 import { pathToFileURL } from 'url';
 import type { PermissionResult } from '@anthropic-ai/claude-agent-sdk';
-import type { CoworkMessage, CoworkStore } from '../../coworkStore';
+import type { CoworkMessage, CoworkSession, CoworkSessionStatus, CoworkExecutionMode, CoworkStore } from '../../coworkStore';
 import {
   OpenClawEngineManager,
   type OpenClawGatewayConnectionInfo,
@@ -545,6 +545,80 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
 
   setChannelSessionSync(sync: OpenClawChannelSessionSync): void {
     this.channelSessionSync = sync;
+  }
+
+  /**
+   * Fetch session history from OpenClaw by sessionKey and return a transient
+   * CoworkSession object (not persisted to local database).
+   * First checks if a local session already exists via channel sync.
+   * Returns a CoworkSession if successful, or null.
+   */
+  async fetchSessionByKey(sessionKey: string): Promise<CoworkSession | null> {
+    // 1. Try existing local session via channel/main-agent resolution
+    if (this.channelSessionSync) {
+      const existingId = this.channelSessionSync.resolveSession(sessionKey);
+      if (existingId) {
+        const session = this.store.getSession(existingId);
+        if (session && session.messages.length > 0) {
+          return session;
+        }
+      }
+    }
+
+    // 2. Fetch history from OpenClaw server and build a transient session object
+    const client = this.gatewayClient;
+    if (!client) return null;
+
+    try {
+      const history = await client.request<{ messages?: unknown[] }>('chat.history', {
+        sessionKey,
+        limit: OpenClawRuntimeAdapter.FULL_HISTORY_SYNC_LIMIT,
+      });
+      if (!Array.isArray(history?.messages) || history.messages.length === 0) {
+        return null;
+      }
+
+      const now = Date.now();
+      const messages: CoworkMessage[] = [];
+      let msgIndex = 0;
+
+      for (const message of history.messages) {
+        if (!isRecord(message)) continue;
+        const role = typeof message.role === 'string' ? message.role.trim().toLowerCase() : '';
+        if (role !== 'user' && role !== 'assistant') continue;
+        const text = extractMessageText(message).trim();
+        if (!text) continue;
+
+        messages.push({
+          id: `transient-${msgIndex++}`,
+          type: role as 'user' | 'assistant',
+          content: text,
+          timestamp: now,
+          metadata: role === 'assistant' ? { isStreaming: false, isFinal: true } : {},
+        });
+      }
+
+      if (messages.length === 0) return null;
+
+      // Return a transient session (not saved to database)
+      return {
+        id: `transient-${sessionKey}`,
+        title: sessionKey.split(':').pop() || 'Cron Session',
+        claudeSessionId: null,
+        status: 'completed' as CoworkSessionStatus,
+        pinned: false,
+        cwd: '',
+        systemPrompt: '',
+        executionMode: 'local' as CoworkExecutionMode,
+        activeSkillIds: [],
+        messages,
+        createdAt: now,
+        updatedAt: now,
+      };
+    } catch (error) {
+      console.error('[OpenClawRuntime] fetchSessionByKey: failed to fetch history:', error);
+      return null;
+    }
   }
 
   /**
@@ -2647,5 +2721,21 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
       throw new Error('OpenClaw gateway client is unavailable.');
     }
     return this.gatewayClient;
+  }
+
+  /**
+   * Return the current gateway client instance, or null if not yet connected.
+   * Used by CronJobService to call cron.* APIs on the same gateway.
+   */
+  getGatewayClient(): GatewayClientLike | null {
+    return this.gatewayClient;
+  }
+
+  /**
+   * Ensure the gateway client is connected and ready.
+   * Resolves when the WebSocket connection is established and authenticated.
+   */
+  async ensureReady(): Promise<void> {
+    await this.ensureGatewayClientReady();
   }
 }

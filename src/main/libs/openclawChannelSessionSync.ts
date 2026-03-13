@@ -12,7 +12,7 @@ import type { IMPlatform } from '../im/types';
 const LOBSTERAI_SESSION_PREFIX = 'lobsterai:';
 
 /** Known OpenClaw channel prefixes mapped to IM platforms. */
-const CHANNEL_PLATFORM_MAP: Record<string, IMPlatform> = {
+export const CHANNEL_PLATFORM_MAP: Record<string, IMPlatform> = {
   telegram: 'telegram',
   discord: 'discord',
   feishu: 'feishu',
@@ -26,8 +26,9 @@ const CHANNEL_PLATFORM_MAP: Record<string, IMPlatform> = {
  *  Supports two formats:
  *  - OpenClaw format: "agent:{agentId}:{platform}:{subtype}:{conversationId}"
  *  - Legacy format:   "{platform}:{conversationId}"
+ *  Exported for reuse by delivery target resolution.
  */
-function parseChannelSessionKey(sessionKey: string): { platform: IMPlatform; conversationId: string } | null {
+export function parseChannelSessionKey(sessionKey: string): { platform: IMPlatform; conversationId: string } | null {
   if (!sessionKey || sessionKey.startsWith(LOBSTERAI_SESSION_PREFIX)) return null;
 
   // Handle OpenClaw format: agent:{agentId}:{platform}:{subtype}:{conversationId}

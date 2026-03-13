@@ -32,7 +32,7 @@ export interface TaskState {
 }
 
 // IM 通知平台类型
-export type NotifyPlatform = 'dingtalk' | 'feishu' | 'qq' | 'telegram' | 'discord' | 'nim' | 'xiaomifeng' | 'wecom';
+export type NotifyPlatform = 'dingtalk' | 'feishu' | 'qq' | 'telegram' | 'discord' | 'wecom';
 
 // 定时任务
 export interface ScheduledTask {
@@ -47,6 +47,7 @@ export interface ScheduledTask {
   executionMode: 'auto' | 'local' | 'sandbox';
   expiresAt: string | null; // ISO 8601 日期（精确到天），null 表示不过期
   notifyPlatforms: NotifyPlatform[]; // 任务完成后通知的 IM 平台
+  deliveryTo: string; // delivery target（如 qqbot:c2c:xxx），空字符串表示自动检测
   state: TaskState;
   createdAt: string;
   updatedAt: string;
@@ -57,12 +58,12 @@ export interface ScheduledTaskRun {
   id: string;
   taskId: string;
   sessionId: string | null;
+  sessionKey: string | null;
   status: 'running' | 'success' | 'error';
   startedAt: string;
   finishedAt: string | null;
   durationMs: number | null;
   error: string | null;
-  trigger: 'scheduled' | 'manual';
 }
 
 // 带任务名称的运行记录（用于全局历史列表）
@@ -81,6 +82,7 @@ export interface ScheduledTaskInput {
   executionMode: 'auto' | 'local' | 'sandbox';
   expiresAt: string | null; // ISO 8601 日期（精确到天），null 表示不过期
   notifyPlatforms: NotifyPlatform[]; // 任务完成后通知的 IM 平台
+  deliveryTo: string; // delivery target，空字符串表示自动检测
   enabled: boolean;
 }
 

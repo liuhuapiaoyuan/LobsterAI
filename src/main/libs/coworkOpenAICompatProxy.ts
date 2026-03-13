@@ -8,8 +8,8 @@ import {
   openAIToAnthropic,
   type OpenAIStreamChunk,
 } from './coworkFormatTransform';
-import type { ScheduledTaskStore, ScheduledTaskInput } from '../scheduledTaskStore';
-import type { Scheduler } from './scheduler';
+import type { ScheduledTaskInput } from '../../renderer/types/scheduledTask';
+import type { CronJobService } from './cronJobService';
 
 export type OpenAICompatUpstreamConfig = {
   baseURL: string;
@@ -82,8 +82,7 @@ const MAX_TOOL_CALL_EXTRA_CONTENT_CACHE = 1024;
 
 // --- Scheduled task API dependencies ---
 interface ScheduledTaskDeps {
-  getScheduledTaskStore: () => ScheduledTaskStore;
-  getScheduler: () => Scheduler;
+  getCronJobService: () => CronJobService;
 }
 let scheduledTaskDeps: ScheduledTaskDeps | null = null;
 
@@ -2256,12 +2255,12 @@ async function handleCreateScheduledTask(
     executionMode: input.executionMode || 'auto',
     expiresAt: input.expiresAt || null,
     notifyPlatforms: input.notifyPlatforms || [],
+    deliveryTo: input.deliveryTo || '',
     enabled: input.enabled !== false,
   };
 
   try {
-    const task = scheduledTaskDeps.getScheduledTaskStore().createTask(taskInput);
-    scheduledTaskDeps.getScheduler().reschedule();
+    const task = await scheduledTaskDeps.getCronJobService().addJob(taskInput);
 
     // Notify renderer to refresh task list
     for (const win of BrowserWindow.getAllWindows()) {
@@ -2288,7 +2287,7 @@ async function handleListScheduledTasks(
     return;
   }
   try {
-    const tasks = scheduledTaskDeps.getScheduledTaskStore().listTasks();
+    const tasks = await scheduledTaskDeps.getCronJobService().listJobs();
     writeJSON(res, 200, { success: true, tasks } as any);
   } catch (err: any) {
     console.error('[CoworkProxy] Failed to list scheduled tasks:', err);
@@ -2306,7 +2305,7 @@ async function handleGetScheduledTask(
     return;
   }
   try {
-    const task = scheduledTaskDeps.getScheduledTaskStore().getTask(id);
+    const task = await scheduledTaskDeps.getCronJobService().getJob(id);
     if (!task) {
       writeJSON(res, 404, { success: false, error: `Task not found: ${id}` } as any);
       return;
@@ -2329,7 +2328,7 @@ async function handleUpdateScheduledTask(
   }
 
   // Verify task exists first
-  const existing = scheduledTaskDeps.getScheduledTaskStore().getTask(id);
+  const existing = await scheduledTaskDeps.getCronJobService().getJob(id);
   if (!existing) {
     writeJSON(res, 404, { success: false, error: `Task not found: ${id}` } as any);
     return;
@@ -2393,12 +2392,11 @@ async function handleUpdateScheduledTask(
   }
 
   try {
-    const task = scheduledTaskDeps.getScheduledTaskStore().updateTask(id, updateInput);
+    const task = await scheduledTaskDeps.getCronJobService().updateJob(id, updateInput);
     if (!task) {
       writeJSON(res, 404, { success: false, error: `Task not found: ${id}` } as any);
       return;
     }
-    scheduledTaskDeps.getScheduler().reschedule();
 
     // Notify renderer to refresh task list
     for (const win of BrowserWindow.getAllWindows()) {
@@ -2426,15 +2424,14 @@ async function handleDeleteScheduledTask(
     return;
   }
 
-  const existing = scheduledTaskDeps.getScheduledTaskStore().getTask(id);
+  const existing = await scheduledTaskDeps.getCronJobService().getJob(id);
   if (!existing) {
     writeJSON(res, 404, { success: false, error: `Task not found: ${id}` } as any);
     return;
   }
 
   try {
-    scheduledTaskDeps.getScheduledTaskStore().deleteTask(id);
-    scheduledTaskDeps.getScheduler().reschedule();
+    await scheduledTaskDeps.getCronJobService().removeJob(id);
 
     // Notify renderer to refresh task list
     for (const win of BrowserWindow.getAllWindows()) {
@@ -2484,12 +2481,12 @@ async function handleToggleScheduledTask(
   }
 
   try {
-    const { task, warning } = scheduledTaskDeps.getScheduledTaskStore().toggleTask(id, input.enabled);
+    const { warning } = await scheduledTaskDeps.getCronJobService().toggleJob(id, input.enabled);
+    const task = await scheduledTaskDeps.getCronJobService().getJob(id);
     if (!task) {
       writeJSON(res, 404, { success: false, error: `Task not found: ${id}` } as any);
       return;
     }
-    scheduledTaskDeps.getScheduler().reschedule();
 
     // Notify renderer to refresh task list
     for (const win of BrowserWindow.getAllWindows()) {

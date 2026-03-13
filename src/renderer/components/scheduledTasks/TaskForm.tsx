@@ -6,6 +6,55 @@ import { i18nService } from '../../services/i18n';
 import { imService } from '../../services/im';
 import { getVisibleIMPlatforms } from '../../utils/regionFilter';
 import type { ScheduledTask, Schedule, ScheduledTaskInput, NotifyPlatform } from '../../types/scheduledTask';
+import type { IMGatewayConfig } from '../../types/im';
+
+// OpenClaw-supported notification platforms (excludes direct gateways like nim, xiaomifeng)
+const OPENCLAW_NOTIFY_PLATFORMS: ReadonlySet<string> = new Set(['dingtalk', 'feishu', 'wecom', 'qq', 'telegram', 'discord']);
+
+// Delivery target format builders per platform (must match PLATFORM_TO_CHANNEL in cronJobService)
+const PLATFORM_DELIVERY_FORMAT: Record<NotifyPlatform, {
+  dmFormat: (id: string) => string;
+  groupFormat?: (id: string) => string;
+}> = {
+  qq:       { dmFormat: id => `qqbot:c2c:${id}`,                  groupFormat: id => `qqbot:group:${id}` },
+  telegram: { dmFormat: id => `telegram:${id}`,                   groupFormat: id => `telegram:group:${id}` },
+  discord:  { dmFormat: id => `discord:${id}`,                    groupFormat: id => `discord:channel:${id}` },
+  feishu:   { dmFormat: id => `feishu:${id}`,     groupFormat: id => `feishu:group:${id}` },
+  wecom:    { dmFormat: id => `wecom:${id}`,      groupFormat: id => `wecom:group:${id}` },
+  dingtalk: { dmFormat: id => `dingtalk-connector:${id}` },
+};
+
+interface DeliveryTargetOption {
+  value: string;
+  label: string;
+  source?: string;
+}
+
+function getDeliveryTargetOptions(platform: NotifyPlatform, imConfig: IMGatewayConfig): DeliveryTargetOption[] {
+  const config = imConfig[platform];
+  if (!config || !('enabled' in config)) return [];
+
+  const fmt = PLATFORM_DELIVERY_FORMAT[platform];
+  if (!fmt) return [];
+
+  const options: DeliveryTargetOption[] = [];
+  const dmLabel = i18nService.t('scheduledTasksFormDeliveryToDm');
+  const groupLabel = i18nService.t('scheduledTasksFormDeliveryToGroup');
+
+  if ('allowFrom' in config && Array.isArray(config.allowFrom)) {
+    for (const id of config.allowFrom) {
+      if (id) options.push({ value: fmt.dmFormat(id), label: `${dmLabel} ${id}` });
+    }
+  }
+
+  if (fmt.groupFormat && 'groupAllowFrom' in config && Array.isArray((config as unknown as Record<string, unknown>).groupAllowFrom)) {
+    for (const id of (config as unknown as { groupAllowFrom: string[] }).groupAllowFrom) {
+      if (id) options.push({ value: fmt.groupFormat!(id), label: `${groupLabel} ${id}` });
+    }
+  }
+
+  return options;
+}
 
 interface TaskFormProps {
   mode: 'create' | 'edit';
@@ -73,7 +122,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
   const [language, setLanguage] = useState<'zh' | 'en'>(i18nService.getLanguage());
 
   const visiblePlatforms = useMemo<NotifyPlatform[]>(() => {
-    return getVisibleIMPlatforms(language) as unknown as NotifyPlatform[];
+    return (getVisibleIMPlatforms(language) as unknown as string[])
+      .filter((p) => OPENCLAW_NOTIFY_PLATFORMS.has(p)) as NotifyPlatform[];
   }, [language]);
 
   // Parse existing schedule for edit mode
@@ -92,14 +142,21 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
   const [notifyPlatforms, setNotifyPlatforms] = useState<NotifyPlatform[]>(task?.notifyPlatforms ?? []);
   const [notifyDropdownOpen, setNotifyDropdownOpen] = useState(false);
   const notifyDropdownRef = useRef<HTMLDivElement>(null);
+  const [deliveryTo, setDeliveryTo] = useState(task?.deliveryTo ?? '');
+  const [deliveryDropdownOpen, setDeliveryDropdownOpen] = useState(false);
+  const deliveryDropdownRef = useRef<HTMLDivElement>(null);
+  const [dynamicTargets, setDynamicTargets] = useState<DeliveryTargetOption[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (notifyDropdownRef.current && !notifyDropdownRef.current.contains(e.target as Node)) {
         setNotifyDropdownOpen(false);
+      }
+      if (deliveryDropdownRef.current && !deliveryDropdownRef.current.contains(e.target as Node)) {
+        setDeliveryDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -118,6 +175,33 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
   useEffect(() => {
     void imService.init();
   }, []);
+
+  // Load dynamic delivery targets when platform changes
+  useEffect(() => {
+    const platform = notifyPlatforms[0];
+    if (!platform) {
+      setDynamicTargets([]);
+      return;
+    }
+    const api = window.electron?.scheduledTasks;
+    if (!api?.listDeliveryTargets) return;
+    let cancelled = false;
+    api.listDeliveryTargets(platform).then((result) => {
+      if (cancelled) return;
+      if (result.success && result.targets) {
+        const targets = result.targets.map(t => ({ value: t.value, label: t.label, source: t.source }));
+        setDynamicTargets(targets);
+        // Auto-fill with first extracted target if deliveryTo is empty
+        if (!deliveryTo) {
+          const firstExtracted = targets.find(t => t.source === 'extracted');
+          if (firstExtracted) {
+            setDeliveryTo(firstExtracted.value);
+          }
+        }
+      }
+    }).catch(() => { /* ignore */ });
+    return () => { cancelled = true; };
+  }, [notifyPlatforms]);
 
   // Clean up selected platforms when visible list changes
   useEffect(() => {
@@ -178,6 +262,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
         executionMode: task?.executionMode ?? 'auto',
         expiresAt: expiresAt || null,
         notifyPlatforms,
+        deliveryTo,
         enabled: task?.enabled ?? true,
       };
       if (mode === 'create') {
@@ -396,9 +481,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
             <span className={notifyPlatforms.length === 0 ? 'dark:text-claude-darkTextSecondary text-claude-textSecondary' : ''}>
               {notifyPlatforms.length === 0
                 ? i18nService.t('scheduledTasksFormNotifyNone')
-                : notifyPlatforms.map((p) =>
-                    i18nService.t(`scheduledTasksFormNotify${p.charAt(0).toUpperCase() + p.slice(1)}`)
-                  ).join(', ')}
+                : i18nService.t(`scheduledTasksFormNotify${notifyPlatforms[0].charAt(0).toUpperCase() + notifyPlatforms[0].slice(1)}`)}
             </span>
             <svg className={`w-4 h-4 ml-2 transition-transform ${notifyDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -406,8 +489,27 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
           </button>
           {notifyDropdownOpen && (
             <div className="absolute z-10 bottom-full mb-1 w-full rounded-lg border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-white shadow-lg py-1">
+              {/* None option */}
+              <label
+                className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors"
+              >
+                <input
+                  type="radio"
+                  name="notifyPlatform"
+                  checked={notifyPlatforms.length === 0}
+                  onChange={() => {
+                    setNotifyPlatforms([]);
+                    setDeliveryTo('');
+                    setNotifyDropdownOpen(false);
+                  }}
+                  className="text-claude-accent focus:ring-claude-accent"
+                />
+                <span className="text-sm dark:text-claude-darkText text-claude-text">
+                  {i18nService.t('scheduledTasksFormNotifyNone')}
+                </span>
+              </label>
               {visiblePlatforms.map((platform) => {
-                const checked = notifyPlatforms.includes(platform);
+                const selected = notifyPlatforms.length > 0 && notifyPlatforms[0] === platform;
                 const configured = isPlatformConfigured(platform);
                 return (
                   <label
@@ -417,18 +519,17 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
                     }`}
                   >
                     <input
-                      type="checkbox"
-                      checked={checked}
+                      type="radio"
+                      name="notifyPlatform"
+                      checked={selected}
                       disabled={!configured}
                       onChange={() => {
                         if (!configured) return;
-                        setNotifyPlatforms(
-                          checked
-                            ? notifyPlatforms.filter((p) => p !== platform)
-                            : [...notifyPlatforms, platform]
-                        );
+                        setNotifyPlatforms([platform]);
+                        setDeliveryTo('');
+                        setNotifyDropdownOpen(false);
                       }}
-                      className="text-claude-accent focus:ring-claude-accent rounded disabled:cursor-not-allowed"
+                      className="text-claude-accent focus:ring-claude-accent disabled:cursor-not-allowed"
                     />
                     <span className="text-sm dark:text-claude-darkText text-claude-text">
                       {i18nService.t(`scheduledTasksFormNotify${platform.charAt(0).toUpperCase() + platform.slice(1)}`)}
@@ -445,6 +546,91 @@ const TaskForm: React.FC<TaskFormProps> = ({ mode, task, onCancel, onSaved }) =>
           )}
         </div>
       </div>
+
+      {/* Delivery Target (shown when a notify platform is selected) */}
+      {notifyPlatforms.length > 0 && (() => {
+        const selectedPlatform = notifyPlatforms[0];
+        const configOptions = getDeliveryTargetOptions(selectedPlatform, imConfig);
+        // Separate extracted targets (rule-based) from other dynamic targets
+        const extractedTargets = dynamicTargets.filter(t => t.source === 'extracted');
+        const otherDynamicTargets = dynamicTargets.filter(t => t.source !== 'extracted');
+        // Merge: extracted first, then config options, then other dynamic targets; deduplicate by value
+        const seen = new Set<string>();
+        const targetOptions: DeliveryTargetOption[] = [];
+        for (const list of [extractedTargets, configOptions, otherDynamicTargets]) {
+          for (const opt of list) {
+            if (!seen.has(opt.value)) {
+              seen.add(opt.value);
+              targetOptions.push(opt);
+            }
+          }
+        }
+        return (
+          <div>
+            <label className={labelClass}>
+              {i18nService.t('scheduledTasksFormDeliveryTo')}
+              <span className="text-xs font-normal dark:text-claude-darkTextSecondary text-claude-textSecondary ml-1">
+                {i18nService.t('scheduledTasksFormOptional')}
+              </span>
+            </label>
+            <div className="relative" ref={deliveryDropdownRef}>
+              <div className="flex items-center gap-0">
+                <input
+                  type="text"
+                  value={deliveryTo}
+                  onChange={(e) => setDeliveryTo(e.target.value)}
+                  onFocus={() => { if (targetOptions.length > 0) setDeliveryDropdownOpen(true); }}
+                  className={inputClass + ' flex-1 rounded-r-none'}
+                  placeholder={i18nService.t('scheduledTasksFormDeliveryToPlaceholder')}
+                />
+                {targetOptions.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryDropdownOpen(!deliveryDropdownOpen)}
+                    className="px-2 py-2 border dark:border-claude-darkBorder border-claude-border border-l-0 rounded-r-lg dark:bg-claude-darkSurface bg-white hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors"
+                  >
+                    <svg className={`w-4 h-4 dark:text-claude-darkTextSecondary text-claude-textSecondary transition-transform ${deliveryDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              {deliveryDropdownOpen && targetOptions.length > 0 && (
+                <div className="absolute z-10 top-full mt-1 w-full rounded-lg border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-white shadow-lg py-1 max-h-48 overflow-y-auto">
+                  {/* Auto-detect option */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeliveryTo('');
+                      setDeliveryDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors ${
+                      !deliveryTo ? 'dark:text-claude-accent text-claude-accent font-medium' : 'dark:text-claude-darkTextSecondary text-claude-textSecondary'
+                    }`}
+                  >
+                    {i18nService.t('scheduledTasksFormDeliveryToAuto')}
+                  </button>
+                  {targetOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setDeliveryTo(opt.value);
+                        setDeliveryDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors ${
+                        deliveryTo === opt.value ? 'dark:text-claude-accent text-claude-accent font-medium' : 'dark:text-claude-darkText text-claude-text'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Actions */}
       <div className="flex items-center justify-end gap-3 pt-2">
