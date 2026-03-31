@@ -3325,41 +3325,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice, onUpda
                     {updateCheckStatus === 'idle' && i18nService.t('checkForUpdate')}
                   </button>
                 </div>
-              </div>
-              <div className="flex items-center justify-between px-4 py-3 border-b border-claude-border dark:border-claude-darkBorder">
-                <span className="text-sm dark:text-claude-darkText text-claude-text">{i18nService.t('aboutContactEmail')}</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void handleCopyContactEmail();
-                    }}
-                    title={i18nService.t('copyToClipboard')}
-                    className="text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary bg-transparent border-none appearance-none p-0 m-0 cursor-pointer focus:outline-none"
-                  >
-                    {ABOUT_CONTACT_EMAIL}
-                  </button>
-                  {emailCopied && (
-                    <span className="text-[11px] leading-4 text-emerald-600 dark:text-emerald-400">
-                      {language === 'zh' ? '已复制' : 'Copied'}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className={`flex items-center justify-between px-4 py-3${testModeUnlocked ? ' border-b border-claude-border dark:border-claude-darkBorder' : ''}`}>
-                <span className="text-sm dark:text-claude-darkText text-claude-text">{i18nService.t('aboutUserManual')}</span>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOpenUserManual();
-                  }}
-                  className="text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-accent dark:hover:text-claude-accent bg-transparent border-none appearance-none px-1.5 py-0.5 -mx-1.5 -my-0.5 rounded-md cursor-pointer focus:outline-none dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover transition-colors"
-                >
-                  {ABOUT_USER_MANUAL_URL}
-                </button>
-              </div>
+              </div> 
+           
               {testModeUnlocked && (
                 <div className="flex items-center justify-between px-4 py-3">
                   <span className="text-sm dark:text-claude-darkText text-claude-text">{i18nService.t('testMode')}</span>
@@ -3385,17 +3352,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice, onUpda
             {/* Footer */}
             <div className="mt-auto w-full pt-14 pb-2 flex flex-col items-center">
               <div className="flex items-center justify-center text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOpenServiceTerms();
-                  }}
-                  className="bg-transparent border-none appearance-none px-1.5 py-0.5 -mx-1.5 -my-0.5 rounded-md cursor-pointer hover:text-claude-accent dark:hover:text-claude-accent transition-colors"
-                >
-                  {i18nService.t('aboutServiceTerms')}
-                </button>
-                <span className="mx-3 text-xs opacity-40">|</span>
+               
                 <button
                   type="button"
                   onClick={(e) => {
@@ -3407,14 +3364,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice, onUpda
                 >
                   {isExportingLogs ? i18nService.t('aboutExportingLogs') : i18nService.t('aboutExportLogs')}
                 </button>
-              </div>
-
-              <p className="mt-5 text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                {language === 'zh' ? '网易有道 版权所有' : 'NetEase Youdao. All rights reserved.'}
-              </p>
-              <p className="mt-1 text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                Copyright &copy; {new Date().getFullYear()} NetEase Youdao. All Rights Reserved.
-              </p>
+              </div> 
             </div>
           </div>
         );

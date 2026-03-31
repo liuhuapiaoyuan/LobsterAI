@@ -15,7 +15,7 @@
 }
 
 .dark .katex {
-  color: #E4E5E9;
+  color: var(--claude-dark-text, #E4E5E9);
 }
 
 /* Improve code block styles */
@@ -63,6 +63,14 @@ blockquote {
 }
 
 :root {
+  /* Match tailwind.config.js claude.* — single source for plain CSS */
+  --claude-bg: #F8F9FB;
+  --claude-dark-bg: #0F1117;
+  --claude-text: #1A1D23;
+  --claude-dark-text: #E4E5E9;
+  --claude-accent: #F39200;
+  --claude-accent-rgb: 243, 146, 0;
+
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.6;
   font-weight: 400;
@@ -76,30 +84,30 @@ blockquote {
 /* Cold modern dark mode */
 .dark {
   color-scheme: dark;
-  color: #E4E5E9;
-  background-color: #0F1117;
+  color: var(--claude-dark-text);
+  background-color: var(--claude-dark-bg);
 }
 
 /* Cold modern light mode */
 .light {
   color-scheme: light;
-  color: #1A1D23;
-  background-color: #F8F9FB;
+  color: var(--claude-text);
+  background-color: var(--claude-bg);
 }
 
 /* Ensure all containers inherit theme */
 .dark #root,
 .dark .App,
 .dark main {
-  background-color: #0F1117;
-  color: #E4E5E9;
+  background-color: var(--claude-dark-bg);
+  color: var(--claude-dark-text);
 }
 
 .light #root,
 .light .App,
 .light main {
-  background-color: #F8F9FB;
-  color: #1A1D23;
+  background-color: var(--claude-bg);
+  color: var(--claude-text);
 }
 
 body {
@@ -177,7 +185,7 @@ select::-ms-expand {
 
 /* Button styles */
 .btn-primary {
-  @apply bg-claude-accent hover:bg-claude-accentHover text-white font-medium py-2 px-4 rounded-lg transition-colors;
+  @apply bg-claude-accent hover:bg-claude-accentHover active:bg-claude-accentActive text-white font-medium py-2 px-4 rounded-lg transition-colors;
 }
 
 .btn-secondary {
@@ -226,13 +234,13 @@ select::-ms-expand {
   animation: shimmer 1.5s infinite;
 }
 
-/* Streaming activity bar */
+/* Streaming activity bar (brand accent) */
 .streaming-bar {
   position: relative;
   height: 2px;
   overflow: hidden;
   border-radius: 1px;
-  background: rgba(59,130,246,0.1);
+  background: rgba(var(--claude-accent-rgb), 0.1);
 }
 .streaming-bar::before {
   content: '';
@@ -242,14 +250,19 @@ select::-ms-expand {
   height: 100%;
   width: 40%;
   border-radius: 1px;
-  background: linear-gradient(90deg, rgba(59,130,246,0.3) 0%, rgba(59,130,246,0.8) 50%, rgba(59,130,246,0.3) 100%);
+  background: linear-gradient(
+    90deg,
+    rgba(var(--claude-accent-rgb), 0.3) 0%,
+    rgba(var(--claude-accent-rgb), 0.85) 50%,
+    rgba(var(--claude-accent-rgb), 0.3) 100%
+  );
   animation: streaming-slide 1.5s ease-in-out infinite;
 }
 .dark .streaming-bar {
-  background: rgba(59,130,246,0.15);
+  background: rgba(var(--claude-accent-rgb), 0.15);
 }
 .dark .streaming-bar::before {
-  box-shadow: 0 0 6px rgba(59,130,246,0.4);
+  box-shadow: 0 0 6px rgba(var(--claude-accent-rgb), 0.45);
 }
 @keyframes streaming-slide {
   0% { left: -40%; }

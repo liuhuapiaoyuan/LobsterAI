@@ -140,8 +140,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         isCollapsed ? 'w-0' : 'w-60'
       }`}
     >
-      <div className="pt-3 pb-3">
-        <div className="draggable sidebar-header-drag h-8 flex items-center justify-between px-3">
+      <div className="px-2 pt-2.5 pb-2">
+        <div className="draggable sidebar-header-drag h-8 flex items-center justify-between px-1.5">
           <div className={`${isMac ? 'pl-[68px]' : ''}`}>
             {updateBadge}
           </div>
@@ -154,97 +154,99 @@ const Sidebar: React.FC<SidebarProps> = ({
             <SidebarToggleIcon className="h-4 w-4" isCollapsed={isCollapsed} />
           </button>
         </div>
-        <div className="mt-3 space-y-1 px-3">
-          <button
-            type="button"
-            onClick={onNewChat}
-            className={`w-full inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
-              activeView === 'cowork'
-                ? 'bg-claude-accent/10 text-claude-accent hover:bg-claude-accent/20'
-                : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover'
-            }`}
-          >
-            <ComposeIcon className="h-4 w-4" />
-            {i18nService.t('newChat')}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              onShowCowork();
-              setIsSearchOpen(true);
-            }}
-            className="w-full inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors"
-          >
-            <SearchIcon className="h-4 w-4" />
-            {i18nService.t('search')}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setIsSearchOpen(false);
-              onShowScheduledTasks();
-            }}
-            className={`w-full inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
-              activeView === 'scheduledTasks'
-                ? 'bg-claude-accent/10 text-claude-accent hover:bg-claude-accent/20'
-                : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover'
-            }`}
-          >
-            <ClockIcon className="h-4 w-4" />
-            {i18nService.t('scheduledTasks')}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setIsSearchOpen(false);
-              onShowSkills();
-            }}
-            className={`w-full inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
-              activeView === 'skills'
-                ? 'bg-claude-accent/10 text-claude-accent hover:bg-claude-accent/20'
-                : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover'
-            }`}
-          >
-            <PuzzleIcon className="h-4 w-4" />
-            {i18nService.t('skills')}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setIsSearchOpen(false);
-              onShowMcp();
-            }}
-            className={`w-full inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
-              activeView === 'mcp'
-                ? 'bg-claude-accent/10 text-claude-accent hover:bg-claude-accent/20'
-                : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover'
-            }`}
-          >
-            <ConnectorIcon className="h-4 w-4" />
-            {i18nService.t('mcpServers')}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setIsSearchOpen(false);
-              onShowAgents();
-            }}
-            className={`w-full inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
-              activeView === 'agents'
-                ? 'bg-claude-accent/10 text-claude-accent hover:bg-claude-accent/20'
-                : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover'
-            }`}
-          >
-            <UserGroupIcon className="h-4 w-4" />
-            {i18nService.t('myAgents')}
-          </button>
+        <div className="mt-2.5 rounded-xl border border-claude-border/80 bg-claude-surface/90 p-1 shadow-sm dark:border-claude-darkBorder/90 dark:bg-claude-darkSurface/55 dark:shadow-none">
+          <div className="space-y-0.5">
+            <button
+              type="button"
+              onClick={onNewChat}
+              className={`w-full inline-flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-snug transition-all ${
+                activeView === 'cowork'
+                  ? 'bg-claude-accent/12 text-claude-accent shadow-sm ring-1 ring-claude-accent/20 hover:bg-claude-accent/18'
+                  : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover/90 dark:hover:bg-claude-darkSurfaceHover/80'
+              }`}
+            >
+              <ComposeIcon className="h-4 w-4 shrink-0 opacity-90" />
+              {i18nService.t('newChat')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onShowCowork();
+                setIsSearchOpen(true);
+              }}
+              className="w-full inline-flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-snug transition-colors dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover/90 dark:hover:bg-claude-darkSurfaceHover/80"
+            >
+              <SearchIcon className="h-4 w-4 shrink-0 opacity-90" />
+              {i18nService.t('search')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsSearchOpen(false);
+                onShowScheduledTasks();
+              }}
+              className={`w-full inline-flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-snug transition-all ${
+                activeView === 'scheduledTasks'
+                  ? 'bg-claude-accent/12 text-claude-accent shadow-sm ring-1 ring-claude-accent/20 hover:bg-claude-accent/18'
+                  : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover/90 dark:hover:bg-claude-darkSurfaceHover/80'
+              }`}
+            >
+              <ClockIcon className="h-4 w-4 shrink-0 opacity-90" />
+              {i18nService.t('scheduledTasks')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsSearchOpen(false);
+                onShowSkills();
+              }}
+              className={`w-full inline-flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-snug transition-all ${
+                activeView === 'skills'
+                  ? 'bg-claude-accent/12 text-claude-accent shadow-sm ring-1 ring-claude-accent/20 hover:bg-claude-accent/18'
+                  : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover/90 dark:hover:bg-claude-darkSurfaceHover/80'
+              }`}
+            >
+              <PuzzleIcon className="h-4 w-4 shrink-0 opacity-90" />
+              {i18nService.t('skills')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsSearchOpen(false);
+                onShowMcp();
+              }}
+              className={`w-full inline-flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-snug transition-all ${
+                activeView === 'mcp'
+                  ? 'bg-claude-accent/12 text-claude-accent shadow-sm ring-1 ring-claude-accent/20 hover:bg-claude-accent/18'
+                  : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover/90 dark:hover:bg-claude-darkSurfaceHover/80'
+              }`}
+            >
+              <ConnectorIcon className="h-4 w-4 shrink-0 opacity-90" />
+              {i18nService.t('mcpServers')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsSearchOpen(false);
+                onShowAgents();
+              }}
+              className={`w-full inline-flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-snug transition-all ${
+                activeView === 'agents'
+                  ? 'bg-claude-accent/12 text-claude-accent shadow-sm ring-1 ring-claude-accent/20 hover:bg-claude-accent/18'
+                  : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover/90 dark:hover:bg-claude-darkSurfaceHover/80'
+              }`}
+            >
+              <UserGroupIcon className="h-4 w-4 shrink-0 opacity-90" />
+              {i18nService.t('myAgents')}
+            </button>
+          </div>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto px-2.5 pb-4">
+      <div className="flex-1 overflow-y-auto px-2 pb-4">
         <SidebarAgentList
           onShowCowork={onShowCowork}
         />
-        <div className="px-3 pb-2 text-sm font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary">
+        <div className="mx-1 mb-1.5 mt-0.5 border-l-2 border-claude-accent/35 pl-2.5 pr-1 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-claude-textSecondary/75 dark:border-claude-accent/40 dark:text-claude-darkTextSecondary/80">
           {i18nService.t('coworkHistory')}
         </div>
         <CoworkSessionList
@@ -392,15 +394,15 @@ const SidebarAgentList: React.FC<{
   };
 
   return (
-    <div className="px-3 pb-2">
+    <div className="px-1 pb-2">
       <div className="space-y-0.5">
         {enabledAgents.map((agent) => (
           <div
             key={agent.id}
             className={`group flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm cursor-pointer transition-colors ${
               currentAgentId === agent.id
-                ? 'bg-claude-accent/10 text-claude-accent'
-                : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover'
+                ? 'bg-claude-accent/12 text-claude-accent ring-1 ring-claude-accent/15'
+                : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover/90 dark:hover:bg-claude-darkSurfaceHover/80'
             }`}
             onClick={() => handleSwitch(agent.id)}
           >

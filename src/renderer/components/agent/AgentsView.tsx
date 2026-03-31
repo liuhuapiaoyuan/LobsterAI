@@ -98,7 +98,7 @@ const AgentsView: React.FC<AgentsViewProps> = ({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto min-h-0 [scrollbar-gutter:stable]">
-        <div className="max-w-3xl mx-auto px-4 py-6">
+        <div className="px-4 py-6">
           {/* Subtitle */}
           <p className="text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary mb-6">
             {i18nService.t('agentsSubtitle')}
@@ -110,7 +110,7 @@ const AgentsView: React.FC<AgentsViewProps> = ({
               <h2 className="text-sm font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary mb-3">
                 {i18nService.t('presetAgents')}
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-4">
                 {/* Installed presets */}
                 {presetAgents.map((agent) => (
                   <AgentCard
@@ -142,7 +142,7 @@ const AgentsView: React.FC<AgentsViewProps> = ({
             <h2 className="text-sm font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary mb-3">
               {i18nService.t('myCustomAgents')}
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-4">
               {customAgents.map((agent) => (
                 <AgentCard
                   key={agent.id}
@@ -157,12 +157,13 @@ const AgentsView: React.FC<AgentsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsCreateOpen(true)}
-                className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed dark:border-claude-darkBorder border-claude-border hover:border-claude-accent dark:hover:border-claude-accent hover:bg-claude-accent/5 dark:hover:bg-claude-accent/5 transition-colors min-h-[140px] cursor-pointer"
+                className="group relative flex min-h-[168px] flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border-2 border-dashed border-claude-border bg-claude-surface/40 transition-all hover:border-claude-accent/70 hover:bg-gradient-to-br hover:from-claude-accent/[0.06] hover:to-transparent dark:border-claude-darkBorder dark:bg-claude-darkSurface/40 dark:hover:border-claude-accent/50"
               >
-                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-claude-accent/10 dark:bg-claude-accent/20">
-                  <PlusIcon className="h-5 w-5 text-claude-accent" />
+                <div className="absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100 [background:radial-gradient(ellipse_80%_60%_at_50%_0%,rgba(243,146,0,0.12),transparent_70%)] dark:[background:radial-gradient(ellipse_80%_60%_at_50%_0%,rgba(243,146,0,0.18),transparent_70%)]" />
+                <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-claude-accent/20 to-claude-accent/5 shadow-inner ring-1 ring-claude-accent/20 transition-transform group-hover:scale-105 dark:from-claude-accent/30 dark:to-claude-accent/10">
+                  <PlusIcon className="h-7 w-7 text-claude-accent" />
                 </div>
-                <span className="text-sm font-medium text-claude-accent">
+                <span className="relative text-sm font-semibold text-claude-accent">
                   {i18nService.t('createNewAgent')}
                 </span>
               </button>
@@ -197,22 +198,49 @@ const AgentCard: React.FC<{
   <button
     type="button"
     onClick={onClick}
-    className={`flex flex-col items-start gap-2 p-4 rounded-xl border-2 text-left transition-all min-h-[140px] hover:shadow-md dark:hover:shadow-none dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover ${
+    className={`group cursor-pointer relative flex min-h-[168px] flex-col overflow-hidden rounded-2xl border text-left shadow-subtle transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-claude-accent/50 ${
       isActive
-        ? 'border-claude-accent bg-claude-accent/5 dark:bg-claude-accent/10'
-        : 'dark:border-claude-darkBorder border-claude-border'
+        ? 'border-claude-accent/50 bg-gradient-to-b from-claude-accent/[0.09] via-claude-surface to-claude-surface ring-1 ring-claude-accent/25 dark:from-claude-accent/20 dark:via-claude-darkSurface dark:to-claude-darkSurface dark:ring-claude-accent/35'
+        : 'border-claude-border bg-claude-surface hover:border-claude-accent/35 dark:border-claude-darkBorder dark:bg-claude-darkSurface dark:hover:border-claude-accent/25'
     }`}
   >
-    <span className="text-3xl">{icon || '🤖'}</span>
-    <div className="min-w-0 w-full">
-      <div className="text-sm font-semibold dark:text-claude-darkText text-claude-text truncate">
-        {name}
-      </div>
-      {description && (
-        <div className="text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary mt-0.5 line-clamp-2">
-          {description}
+    <div
+      className={`h-1 w-full shrink-0 ${
+        isActive
+          ? 'bg-gradient-to-r from-claude-accent via-claude-accentHover to-transparent'
+          : 'bg-gradient-to-r from-claude-border via-claude-border/40 to-transparent dark:from-claude-darkBorder dark:via-claude-darkBorder/50'
+      }`}
+    />
+    <div className="flex flex-1 flex-col p-4 pt-3">
+      <div className="flex gap-3">
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl shadow-inner transition-transform group-hover:scale-[1.03] ${
+            isActive
+              ? 'bg-gradient-to-br from-claude-accent/30 to-claude-accent/5 ring-1 ring-claude-accent/25 dark:from-claude-accent/35 dark:to-claude-accent/10'
+              : 'bg-claude-surfaceMuted ring-1 ring-claude-border/60 dark:bg-claude-darkSurfaceInset dark:ring-claude-darkBorder'
+          }`}
+        >
+          {icon || '🤖'}
         </div>
-      )}
+        <div className="min-w-0 flex-1 pt-0.5">
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-sm font-semibold leading-snug text-claude-text dark:text-claude-darkText line-clamp-2">
+              {name}
+            </span>
+            {isActive && (
+              <span
+                className="mt-1 h-2 w-2 shrink-0 rounded-full bg-claude-accent shadow-glow-accent"
+                aria-hidden
+              />
+            )}
+          </div>
+          {description && (
+            <p className="mt-2 text-xs leading-relaxed text-claude-textSecondary dark:text-claude-darkTextSecondary line-clamp-3">
+              {description}
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   </button>
 );
@@ -226,26 +254,33 @@ const UninstalledPresetCard: React.FC<{
   isAdding: boolean;
   onAdd: () => void;
 }> = ({ icon, name, description, isAdding, onAdd }) => (
-  <div className="flex flex-col items-start gap-2 p-4 rounded-xl border-2 border-dashed dark:border-claude-darkBorder border-claude-border opacity-60 hover:opacity-80 transition-opacity min-h-[140px]">
-    <span className="text-3xl">{icon || '🤖'}</span>
-    <div className="min-w-0 w-full flex-1">
-      <div className="text-sm font-semibold dark:text-claude-darkText text-claude-text truncate">
-        {name}
-      </div>
-      {description && (
-        <div className="text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary mt-0.5 line-clamp-2">
-          {description}
+  <div className="relative flex  min-h-[168px] flex-col overflow-hidden rounded-2xl  cursor-pointer border-transparent border hover:border-claude bg-claude-surface/50 transition-all hover:border-claude-accent/40 hover:bg-claude-surface dark:border-claude-darkBorder dark:bg-claude-darkSurface/50 dark:hover:border-claude-accent/35">
+    <div className="h-1 w-full shrink-0 bg-gradient-to-r from-claude-textSecondary/25 via-transparent to-transparent dark:from-claude-darkTextSecondary/30" />
+    <div className="flex flex-1 flex-col p-4 pt-3">
+      <div className="flex gap-3 opacity-75">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-claude-surfaceMuted text-2xl grayscale ring-1 ring-claude-border/70 dark:bg-claude-darkSurfaceInset dark:ring-claude-darkBorder">
+          {icon || '🤖'}
         </div>
-      )}
+        <div className="min-w-0 flex-1 pt-0.5">
+          <div className="text-sm font-semibold leading-snug text-claude-text line-clamp-2 dark:text-claude-darkText">
+            {name}
+          </div>
+          {description && (
+            <p className="mt-2 text-xs leading-relaxed text-claude-textSecondary line-clamp-3 dark:text-claude-darkTextSecondary">
+              {description}
+            </p>
+          )}
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onAdd}
+        disabled={isAdding}
+        className="mt-4 w-full rounded-xl bg-gradient-to-r from-claude-accent to-claude-accentHover py-2.5 text-xs font-semibold text-white shadow-subtle transition hover:from-claude-accentHover hover:to-claude-accent disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {isAdding ? '...' : (i18nService.t('addAgent') || 'Add')}
+      </button>
     </div>
-    <button
-      type="button"
-      onClick={onAdd}
-      disabled={isAdding}
-      className="self-end px-3 py-1 text-xs font-medium rounded-lg bg-claude-accent text-white hover:bg-claude-accent/90 disabled:opacity-50 transition-colors"
-    >
-      {isAdding ? '...' : (i18nService.t('addAgent') || 'Add')}
-    </button>
   </div>
 );
 

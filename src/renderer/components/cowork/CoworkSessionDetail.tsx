@@ -1947,7 +1947,7 @@ const CoworkSessionDetail: React.FC<CoworkSessionDetailProps> = ({
   return (
     <div ref={detailRootRef} className="flex-1 flex flex-col dark:bg-claude-darkBg bg-claude-bg h-full">
       {/* Header */}
-      <div className="draggable flex h-12 items-center justify-between px-4 border-b dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface/50 bg-claude-surface/50 shrink-0">
+      <div className="draggable flex h-12 shrink-0 items-center justify-between bg-claude-surface/60 px-4 shadow-[0_4px_16px_-4px_rgba(15,17,23,0.08)] backdrop-blur-sm dark:bg-claude-darkSurface/60 dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.45)]">
         {/* Left side: Toggle buttons (when collapsed) + Title */}
         <div className="flex h-full items-center gap-2 min-w-0">
           {isSidebarCollapsed && (
@@ -2026,7 +2026,7 @@ const CoworkSessionDetail: React.FC<CoworkSessionDetailProps> = ({
       {menuPosition && (
         <div
           ref={menuRef}
-          className="fixed z-50 min-w-[180px] rounded-xl border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-claude-surface shadow-popover popover-enter overflow-hidden"
+          className="fixed z-50 min-w-[200px] overflow-hidden rounded-xl bg-claude-surface/95 shadow-modal backdrop-blur-md dark:bg-claude-darkSurface/95 popover-enter"
           style={{ top: menuPosition.y, left: menuPosition.x }}
           role="menu"
         >
@@ -2124,6 +2124,28 @@ const CoworkSessionDetail: React.FC<CoworkSessionDetailProps> = ({
         >
           {renderConversationTurns()}
           <div className="h-20" />
+
+             {/* Input Area */}
+      <div className="sticky bottom-0  px-4 pb-5 pt-4 ">
+        
+      {/* Streaming Activity Bar */}
+      {isStreaming && <StreamingActivityBar messages={currentSession.messages} />}
+
+        <div className="mx-auto max-w-3xl w-full">
+          <CoworkPromptInput 
+            onSubmit={onContinue}
+            onStop={onStop}
+            isStreaming={isStreaming}
+            placeholder={i18nService.t(remoteManaged ? 'coworkRemoteManagedPlaceholder' : 'coworkContinuePlaceholder')}
+            disabled={remoteManaged}
+            size="large"
+            remoteManaged={remoteManaged}
+            onManageSkills={remoteManaged ? undefined : onManageSkills}
+            showModelSelector={!remoteManaged}
+            sessionId={currentSession?.id}
+          />
+        </div>
+      </div>
         </div>
 
         {/* Turn Navigation Rail — to the left of scrollbar */}
@@ -2300,12 +2322,10 @@ const CoworkSessionDetail: React.FC<CoworkSessionDetailProps> = ({
         {/* Rail Tooltip — rendered via portal to escape transform context */}
         {railTooltip && createPortal(
           <div
-            className={`fixed z-[100] px-3.5 py-2 text-[13px] leading-snug pointer-events-none overflow-hidden
-              max-w-[240px] shadow-[0_2px_12px_rgba(0,0,0,0.12)]
-              border dark:shadow-[0_2px_12px_rgba(0,0,0,0.4)]
+            className={`fixed z-[100] max-w-[240px] overflow-hidden px-3.5 py-2.5 text-[13px] leading-snug pointer-events-none shadow-modal backdrop-blur-md
               ${railTooltip.isUser
-                ? 'rounded-[12px_12px_4px_12px] bg-white border-neutral-200/80 dark:bg-neutral-800 dark:border-neutral-700'
-                : 'rounded-xl bg-neutral-50 border-neutral-200/80 dark:bg-neutral-800 dark:border-neutral-700'
+                ? 'rounded-[12px_12px_4px_12px] bg-claude-surface/95 text-claude-text dark:bg-claude-darkSurface/95 dark:text-claude-darkText'
+                : 'rounded-xl bg-claude-surface/90 text-claude-text dark:bg-claude-darkSurface/90 dark:text-claude-darkText'
               }`}
             style={{
               top: railTooltip.top,
@@ -2314,12 +2334,12 @@ const CoworkSessionDetail: React.FC<CoworkSessionDetailProps> = ({
             }}
           >
             {!railTooltip.isUser && (
-              <div className="text-[12px] font-medium mb-0.5 text-neutral-800 dark:text-neutral-200">
-                YuanAI:
+              <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-claude-accent dark:text-claude-accentLight">
+                YuanAI
               </div>
             )}
             <div
-              className="text-neutral-600 dark:text-neutral-300"
+              className="text-sm text-claude-textSecondary dark:text-claude-darkTextSecondary"
               style={{
                 display: '-webkit-box',
                 WebkitLineClamp: 2,
@@ -2335,26 +2355,7 @@ const CoworkSessionDetail: React.FC<CoworkSessionDetailProps> = ({
         )}
       </div>
 
-      {/* Streaming Activity Bar */}
-      {isStreaming && <StreamingActivityBar messages={currentSession.messages} />}
-
-      {/* Input Area */}
-      <div className="p-4 shrink-0">
-        <div className="max-w-3xl mx-auto">
-          <CoworkPromptInput
-            onSubmit={onContinue}
-            onStop={onStop}
-            isStreaming={isStreaming}
-            placeholder={i18nService.t(remoteManaged ? 'coworkRemoteManagedPlaceholder' : 'coworkContinuePlaceholder')}
-            disabled={remoteManaged}
-            size="large"
-            remoteManaged={remoteManaged}
-            onManageSkills={remoteManaged ? undefined : onManageSkills}
-            showModelSelector={!remoteManaged}
-            sessionId={currentSession?.id}
-          />
-        </div>
-      </div>
+   
     </div>
   );
 };

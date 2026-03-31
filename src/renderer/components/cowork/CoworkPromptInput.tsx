@@ -308,8 +308,16 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
   };
 
   const containerClass = isLarge
-    ? 'relative rounded-2xl border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-claude-surface shadow-card focus-within:shadow-elevated focus-within:ring-1 focus-within:ring-claude-accent/40 focus-within:border-claude-accent'
-    : 'relative flex items-end gap-2 p-3 rounded-xl border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-claude-surface';
+    ? 'relative bg-claude-surface shadow-[0_2px_16px_rgba(15,17,23,0.06)] transition-shadow duration-200 dark:bg-claude-darkSurface/90 dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)] focus-within:shadow-[0_4px_28px_rgba(243,146,0,0.14)] dark:focus-within:shadow-[0_4px_32px_rgba(243,146,0,0.12)] focus-within:ring-2 focus-within:ring-claude-accent/25'
+    : 'relative flex items-end gap-2 p-3 dark:bg-claude-darkSurface bg-claude-surface';
+
+  const rainbowBorderWrapperClass = [
+    'relative p-[2px] ',
+    isLarge ? 'rounded-2xl' : 'rounded-xl',
+    isStreaming ? 'animate-border-flow-fast' : 'animate-border-flow',
+    'bg-[length:200%_100%]',
+    '[background-image:linear-gradient(90deg,#ec4899_0%,#f97316_16%,#eab308_33%,#22c55e_50%,#06b6d4_66%,#8b5cf6_83%,#ec4899_100%)]',
+  ].join(' ');
 
   const textareaClass = isLarge
     ? `w-full resize-none bg-transparent px-4 pt-2.5 pb-2 dark:text-claude-darkText text-claude-text placeholder:dark:text-claude-darkTextSecondary/60 placeholder:text-claude-textSecondary/60 focus:outline-none text-[15px] leading-6 min-h-[${minHeight}px] max-h-[${maxHeight}px]`
@@ -583,18 +591,22 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
   }, [disabled, handleIncomingFiles, isStreaming]);
 
   const canSubmit = !disabled && (!!value.trim() || attachments.length > 0);
-  const enhancedContainerClass = isDraggingFiles
-    ? `${containerClass} ring-2 ring-claude-accent/50 border-claude-accent/60`
-    : containerClass;
+  const enhancedRainbowBorderClass = isDraggingFiles
+    ? `${rainbowBorderWrapperClass} ring-2 ring-claude-accent/50`
+    : rainbowBorderWrapperClass;
+
+  const innerRadiusClass = isLarge ? 'rounded-[14px]' : 'rounded-[10px]';
+
+  const enhancedContainerClass = `${containerClass} ${innerRadiusClass}`;
 
   return (
     <div className="relative">
       {attachments.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2">
+        <div className=" flex flex-wrap gap-2 p-2">
           {attachments.map((attachment) => (
               <div
                 key={attachment.path}
-                className="inline-flex items-center gap-1.5 rounded-full border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-claude-surface px-2.5 py-1 text-xs dark:text-claude-darkText text-claude-text max-w-full"
+                className="inline-flex items-center gap-1.5 rounded-full  dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-claude-surface px-2.5 py-1 text-xs dark:text-claude-darkText text-claude-text max-w-full"
                 title={attachment.path}
               >
                 {attachment.isImage ? (
@@ -633,19 +645,20 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
           </button>
         </div>
       )}
-      <div
-        className={enhancedContainerClass}
-        onDragEnter={handleDragEnter}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        {isDraggingFiles && (
-          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-[inherit] bg-claude-accent/10 text-xs font-medium text-claude-accent">
-            {i18nService.t('coworkDropFileHint')}
-          </div>
-        )}
-        {isLarge ? (
+      <div className={enhancedRainbowBorderClass}>
+        <div
+          className={enhancedContainerClass}
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {isDraggingFiles && (
+            <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-[inherit] bg-claude-accent/10 text-xs font-medium text-claude-accent">
+              {i18nService.t('coworkDropFileHint')}
+            </div>
+          )}
+          {isLarge ? (
           <>
             <textarea
               ref={textareaRef}
@@ -787,7 +800,8 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
               </button>
             )}
           </>
-        )}
+          )}
+        </div>
       </div>
       {showFolderRequiredWarning && (
         <div className="mt-2 text-xs text-red-500 dark:text-red-400">

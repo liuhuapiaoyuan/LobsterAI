@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
 import { addMessage, clearCurrentSession, setCurrentSession, setStreaming, updateSessionStatus } from '../../store/slices/coworkSlice';
@@ -48,6 +48,52 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
     config,
   } = useSelector((state: RootState) => state.cowork);
   const isOpenClawEngine = config.agentEngine !== 'yd_cowork';
+
+  const coworkDescriptionText = i18nService.t('coworkDescription');
+  const coworkDescriptionChars = useMemo(
+    () => Array.from(coworkDescriptionText),
+    [coworkDescriptionText],
+  );
+  const [coworkDescriptionTypedLen, setCoworkDescriptionTypedLen] = useState(0);
+
+  useEffect(() => {
+    const len = Array.from(coworkDescriptionText).length;
+    if (len === 0) {
+      setCoworkDescriptionTypedLen(0);
+      return;
+    }
+
+    const typingDelayMs = 42;
+    const pauseBeforeReplayMs = 4500;
+    let cancelled = false;
+    let timeoutId: number;
+
+    const runCycle = () => {
+      let i = 0;
+      const tick = () => {
+        if (cancelled) return;
+        i += 1;
+        setCoworkDescriptionTypedLen(i);
+        if (i < len) {
+          timeoutId = window.setTimeout(tick, typingDelayMs);
+        } else {
+          timeoutId = window.setTimeout(() => {
+            if (cancelled) return;
+            runCycle();
+          }, pauseBeforeReplayMs);
+        }
+      };
+      setCoworkDescriptionTypedLen(0);
+      timeoutId = window.setTimeout(tick, typingDelayMs);
+    };
+
+    runCycle();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [coworkDescriptionText]);
 
   const activeSkillIds = useSelector((state: RootState) => state.skill.activeSkillIds);
   const skills = useSelector((state: RootState) => state.skill.skills);
@@ -430,7 +476,7 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
     : true;
 
   const homeHeader = (
-    <div className="draggable flex h-12 items-center justify-between px-4 border-b dark:border-claude-darkBorder border-claude-border shrink-0">
+    <div className="draggable flex h-12 items-center justify-between px-4  dark:border-claude-darkBorder border-claude-border shrink-0">
       <div className="non-draggable h-8 flex items-center">
         {isSidebarCollapsed && (
           <div className={`flex items-center gap-1 mr-2 ${isMac ? 'pl-[68px]' : ''}`}>
@@ -524,12 +570,26 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
         <div className="max-w-3xl mx-auto px-4 py-16 space-y-12">
           {/* Welcome Section */}
           <div className="text-center space-y-5">
-            <img src="logo.png" alt="logo" className="w-16 h-16 mx-auto" />
-            <h2 className="text-3xl font-bold tracking-tight dark:text-claude-darkText text-claude-text">
+            <img src="lobster-yuan.png" alt="logo" className="w-16 h-16 mx-auto" />
+            <h2 className="text-xl tracking-tight dark:text-claude-darkText text-claude-text">
               {i18nService.t('coworkWelcome')}
             </h2>
-            <p className="text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary max-w-md mx-auto">
-              {i18nService.t('coworkDescription')}
+            <p className="relative  font-bold text-3xl dark:text-claude-darkTextSecondary text-claude max-w-md mx-auto">
+              <span className="sr-only">{coworkDescriptionText}</span>
+              <span className="invisible block whitespace-pre-wrap select-none pointer-events-none" aria-hidden>
+                {coworkDescriptionText}
+              </span>
+              <span className="absolute inset-0 flex justify-center" aria-hidden>
+                <span className="text-center whitespace-pre-wrap">
+                  {coworkDescriptionChars.slice(0, coworkDescriptionTypedLen).join('')}
+                  {coworkDescriptionTypedLen < coworkDescriptionChars.length && (
+                    <span
+                      className="inline-block w-px h-[1em] align-[-0.15em] ml-0.5 bg-current opacity-80 animate-pulse"
+                      aria-hidden
+                    />
+                  )}
+                </span>
+              </span>
             </p>
           </div>
 

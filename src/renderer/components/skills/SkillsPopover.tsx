@@ -106,7 +106,7 @@ const SkillsPopover: React.FC<SkillsPopoverProps> = ({
   return (
     <div
       ref={popoverRef}
-      className="absolute bottom-full left-0 mb-2 w-72 rounded-xl border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-claude-surface shadow-xl z-50"
+      className="absolute bottom-full left-0 mb-2 w-72 rounded-xl border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-claude-surface shadow-xl z-[99999]"
     >
       {/* Search input */}
       <div className="p-3 border-b dark:border-claude-darkBorder border-claude-border">

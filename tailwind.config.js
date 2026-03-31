@@ -30,20 +30,33 @@ export default {
           darkBorderLight: '#1F232B',  // Subtle dark dividers
           darkText: '#E4E5E9',         // Dark primary text
           darkTextSecondary: '#8B8FA3', // Dark secondary text
-          // Accent (tech blue)
-          accent: '#3B82F6',           // Blue primary
-          accentHover: '#2563EB',      // Blue hover
-          accentLight: '#60A5FA',      // Light blue for badges
-          accentMuted: 'rgba(59,130,246,0.10)', // Very faint blue background
+          // Accent (Shuangyuan brand orange)
+          accent: '#F39200',
+          accentHover: '#F9B233',
+          accentActive: '#C67100',
+          accentLight: '#FBBF24',
+          accentMuted: 'rgba(243,146,0,0.12)',
         },
         primary: {
-          DEFAULT: '#3B82F6',
-          dark: '#2563EB'
+          DEFAULT: '#F39200',
+          dark: '#C67100'
         },
         secondary: {
           DEFAULT: '#6B7280',
           dark: '#2A2E38'
-        }
+        },
+        success: {
+          DEFAULT: '#22C55E',
+          muted: 'rgba(34,197,94,0.12)',
+        },
+        warning: {
+          DEFAULT: '#EAB308',
+          muted: 'rgba(234,179,8,0.12)',
+        },
+        danger: {
+          DEFAULT: '#EF4444',
+          muted: 'rgba(239,68,68,0.12)',
+        },
       },
       boxShadow: {
         subtle: '0 1px 2px rgba(0,0,0,0.05)',
@@ -51,7 +64,7 @@ export default {
         elevated: '0 4px 12px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.04)',
         modal: '0 8px 30px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08)',
         popover: '0 4px 20px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.05)',
-        'glow-accent': '0 0 20px rgba(59,130,246,0.15)',
+        'glow-accent': '0 0 20px rgba(243,146,0,0.22)',
       },
       keyframes: {
         'fade-in': {
@@ -74,6 +87,11 @@ export default {
           '0%': { transform: 'translateX(-100%)' },
           '100%': { transform: 'translateX(100%)' },
         },
+        /** Rainbow border “flow” for CoworkPromptInput — seamless loop via repeated endpoints */
+        'border-flow': {
+          '0%': { backgroundPosition: '0% 50%' },
+          '100%': { backgroundPosition: '200% 50%' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.2s ease-out',
@@ -81,6 +99,8 @@ export default {
         'fade-in-down': 'fade-in-down 0.2s ease-out',
         'scale-in': 'scale-in 0.2s ease-out',
         shimmer: 'shimmer 1.5s infinite',
+        'border-flow': 'border-flow 7s linear infinite',
+        'border-flow-fast': 'border-flow 2s linear infinite',
       },
       transitionTimingFunction: {
         smooth: 'cubic-bezier(0.4, 0, 0.2, 1)',
@@ -90,9 +110,9 @@ export default {
           css: {
             color: '#1A1D23',
             a: {
-              color: '#3B82F6',
+              color: '#F39200',
               '&:hover': {
-                color: '#2563EB',
+                color: '#C67100',
               },
             },
             code: {
@@ -116,7 +136,7 @@ export default {
               overflowX: 'auto',
             },
             blockquote: {
-              borderLeftColor: '#3B82F6',
+              borderLeftColor: '#F39200',
               color: '#6B7280',
             },
             h1: {
@@ -140,9 +160,9 @@ export default {
           css: {
             color: '#E4E5E9',
             a: {
-              color: '#60A5FA',
+              color: '#F9B233',
               '&:hover': {
-                color: '#93BBFD',
+                color: '#FBBF24',
               },
             },
             code: {
@@ -160,7 +180,7 @@ export default {
               overflowX: 'auto',
             },
             blockquote: {
-              borderLeftColor: '#3B82F6',
+              borderLeftColor: '#F39200',
               color: '#8B8FA3',
             },
             h1: {

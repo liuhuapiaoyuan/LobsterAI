@@ -437,8 +437,9 @@ const translations: Record<LanguageType, Record<string, string>> = {
     coworkQuestionWizardOtherPlaceholder: '请输入自定义答案...',
     coworkQuestionWizardSelectAtLeastOne: '请至少选择一个选项',
     coworkQuestionWizardAnswerRequired: '请选择或输入答案',
-    coworkWelcome: '开始协作',
-    coworkDescription: '7×24 小时帮你干活的全场景个人助理 Agent',
+    coworkWelcome: '打造AI时代的超级个体',
+    delete: '删除',
+    coworkDescription: '开始养一只你的“虾”',
 
     // Multi-Agent 管理
     createAgent: '创建 Agent',
@@ -1612,7 +1613,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
     coworkQuestionWizardSelectAtLeastOne: 'Please select at least one option',
     coworkQuestionWizardAnswerRequired: 'Please select or enter an answer',
     coworkWelcome: 'Start Collaborating',
-    coworkDescription: 'A 24/7 personal assistant agent that gets work done for you',
+    coworkDescription: 'Build the super individual in the age of AI',
 
     // Multi-Agent management
     createAgent: 'Create Agent',

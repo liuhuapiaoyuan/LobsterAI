@@ -54,8 +54,8 @@ const CoworkSessionList: React.FC<CoworkSessionListProps> = ({
 
   if (sessions.length === 0) {
     return (
-      <div className="text-center py-8">
-        <p className="text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
+      <div className="mx-0.5 rounded-xl border border-dashed border-claude-border/70 bg-claude-surface/40 px-4 py-10 text-center dark:border-claude-darkBorder/80 dark:bg-claude-darkSurface/35">
+        <p className="text-xs leading-relaxed text-claude-textSecondary/90 dark:text-claude-darkTextSecondary/90">
           {i18nService.t('coworkNoSessions')}
         </p>
       </div>
