@@ -14,16 +14,17 @@ import ClockIcon from './icons/ClockIcon';
 import PuzzleIcon from './icons/PuzzleIcon';
 import SidebarToggleIcon from './icons/SidebarToggleIcon';
 import TrashIcon from './icons/TrashIcon';
-import { ExclamationTriangleIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon, SparklesIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
   onShowSettings: () => void;
   onShowLogin?: () => void;
-  activeView: 'cowork' | 'skills' | 'scheduledTasks' | 'mcp' | 'agents';
+  activeView: 'cowork' | 'skills' | 'scheduledTasks' | 'mcp' | 'lobsterPond' | 'agents';
   onShowSkills: () => void;
   onShowCowork: () => void;
   onShowScheduledTasks: () => void;
   onShowMcp: () => void;
+  onShowLobsterPond: () => void;
   onShowAgents: () => void;
   onNewChat: () => void;
   isCollapsed: boolean;
@@ -38,6 +39,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onShowCowork,
   onShowScheduledTasks,
   onShowMcp,
+  onShowLobsterPond,
   onShowAgents,
   onNewChat,
   isCollapsed,
@@ -223,6 +225,21 @@ const Sidebar: React.FC<SidebarProps> = ({
             >
               <ConnectorIcon className="h-4 w-4 shrink-0 opacity-90" />
               {i18nService.t('mcpServers')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsSearchOpen(false);
+                onShowLobsterPond();
+              }}
+              className={`w-full inline-flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-snug transition-all ${
+                activeView === 'lobsterPond'
+                  ? 'bg-claude-accent/12 text-claude-accent shadow-sm ring-1 ring-claude-accent/20 hover:bg-claude-accent/18'
+                  : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover/90 dark:hover:bg-claude-darkSurfaceHover/80'
+              }`}
+            >
+              <SparklesIcon className="h-4 w-4 shrink-0 opacity-90" />
+              {i18nService.t('lobsterPond')}
             </button>
             <button
               type="button"

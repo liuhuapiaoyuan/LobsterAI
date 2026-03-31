@@ -121,6 +121,10 @@ const App: React.FC = () => {
     setMainView('agents');
   }, []);
 
+  const handleShowLobsterPond = useCallback(() => {
+    setMainView('lobsterPond');
+  }, []);
+
   const handleToggleSidebar = useCallback(() => {
     setIsSidebarCollapsed((prev) => !prev);
   }, []);
@@ -462,6 +466,7 @@ const App: React.FC = () => {
             onShowCowork={handleShowCowork}
             onShowScheduledTasks={handleShowScheduledTasks}
             onShowMcp={handleShowMcp}
+            onShowLobsterPond={handleShowLobsterPond}
             onShowAgents={handleShowAgents}
             onNewChat={handleNewChat}
             isCollapsed={isSidebarCollapsed}
@@ -479,6 +484,7 @@ const App: React.FC = () => {
           onRequestAppSettings={handleShowSettings}
           onShowSkills={handleShowSkills}
           onShowCowork={handleShowCowork}
+          onShowAgents={handleShowAgents}
         />
       </MainWorkspaceLayout>
 

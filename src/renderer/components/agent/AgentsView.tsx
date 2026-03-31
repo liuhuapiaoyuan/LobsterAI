@@ -247,7 +247,7 @@ const AgentCard: React.FC<{
 
 /* ── Uninstalled Preset Card ─────────────────────────── */
 
-const UninstalledPresetCard: React.FC<{
+export const UninstalledPresetCard: React.FC<{
   icon: string;
   name: string;
   description: string;

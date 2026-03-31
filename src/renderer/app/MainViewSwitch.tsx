@@ -4,10 +4,11 @@ import { SkillsView } from '../components/skills';
 import { ScheduledTasksView } from '../components/scheduledTasks';
 import { McpView } from '../components/mcp';
 import AgentsView from '../components/agent/AgentsView';
+import LobsterPondView from '../components/agent/LobsterPondView';
 import EngineStartupOverlay from '../components/cowork/EngineStartupOverlay';
 import type { SettingsOpenOptions } from '../components/Settings';
 
-export type AppMainView = 'cowork' | 'skills' | 'scheduledTasks' | 'mcp' | 'agents';
+export type AppMainView = 'cowork' | 'skills' | 'scheduledTasks' | 'mcp' | 'lobsterPond' | 'agents';
 
 export interface MainViewSwitchProps {
   mainView: AppMainView;
@@ -18,6 +19,7 @@ export interface MainViewSwitchProps {
   onRequestAppSettings: (options?: SettingsOpenOptions) => void;
   onShowSkills: () => void;
   onShowCowork: () => void;
+  onShowAgents?: () => void;
 }
 
 const MainViewSwitch: React.FC<MainViewSwitchProps> = ({
@@ -29,6 +31,7 @@ const MainViewSwitch: React.FC<MainViewSwitchProps> = ({
   onRequestAppSettings,
   onShowSkills,
   onShowCowork,
+  onShowAgents,
 }) => (
   <>
     <EngineStartupOverlay />
@@ -51,6 +54,15 @@ const MainViewSwitch: React.FC<MainViewSwitchProps> = ({
         isSidebarCollapsed={isSidebarCollapsed}
         onToggleSidebar={onToggleSidebar}
         onNewChat={onNewChat}
+        updateBadge={updateBadgeWhenCollapsed}
+      />
+    ) : mainView === 'lobsterPond' ? (
+      <LobsterPondView
+        isSidebarCollapsed={isSidebarCollapsed}
+        onToggleSidebar={onToggleSidebar}
+        onNewChat={onNewChat}
+        onShowCowork={onShowCowork}
+        onShowAgents={onShowAgents}
         updateBadge={updateBadgeWhenCollapsed}
       />
     ) : mainView === 'agents' ? (

@@ -52,6 +52,20 @@ export class AgentManager {
     return PRESET_AGENTS;
   }
 
+  /**
+   * Full preset list with install status (for虾池 / catalog UI).
+   */
+  getPresetAgentsCatalog(): Array<PresetAgent & { installed: boolean }> {
+    const existingAgents = this.store.listAgents();
+    const installedPresetIds = new Set(
+      existingAgents.filter((a) => a.source === 'preset').map((a) => a.presetId)
+    );
+    return PRESET_AGENTS.map((p) => ({
+      ...p,
+      installed: installedPresetIds.has(p.id),
+    }));
+  }
+
   addPresetAgent(presetId: string): Agent | null {
     const preset = PRESET_AGENTS.find(p => p.id === presetId);
     if (!preset) return null;

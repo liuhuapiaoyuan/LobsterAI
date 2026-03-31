@@ -119,6 +119,17 @@ class AgentService {
     }
   }
 
+  /** All built-in presets with install flags (虾池). */
+  async getPresetsCatalog(): Promise<PresetAgent[]> {
+    try {
+      const presets = await window.electron?.agents?.presetsCatalog();
+      return presets ?? [];
+    } catch (error) {
+      console.error('Failed to get presets catalog:', error);
+      return [];
+    }
+  }
+
   async addPreset(presetId: string): Promise<Agent | null> {
     try {
       const agent = await window.electron?.agents?.addPreset(presetId);

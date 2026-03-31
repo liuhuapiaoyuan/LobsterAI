@@ -443,8 +443,12 @@ const translations: Record<LanguageType, Record<string, string>> = {
 
     // Multi-Agent 管理
     createAgent: '创建 Agent',
-    myAgents: '我的虾池',
-    customCreate: '自定义创建',
+    myAgents: '智能体',
+    lobsterPond: '虾池',
+    lobsterPondSubtitle: '浏览官方预制龙虾，一键添加或进入协作对话。',
+    presetGoChat: '去聊天',
+    manageMyAgentsLink: '管理我的智能体（自定义与高级设置）',
+  customCreate: '自定义创建',
     choosePreset: '选择预设',
     agentSettings: 'Agent 设置',
     agentName: '名称',
@@ -1617,8 +1621,12 @@ const translations: Record<LanguageType, Record<string, string>> = {
 
     // Multi-Agent management
     createAgent: 'Create Agent',
-    myAgents: 'My Agents',
-    customCreate: 'Custom Create',
+    myAgents: 'Agents',
+    lobsterPond: 'Lobster Pond',
+    lobsterPondSubtitle: 'Browse official preset lobsters, add them to your pool, or start a chat.',
+    presetGoChat: 'Chat',
+    manageMyAgentsLink: 'Manage agents (custom & advanced settings)',
+  customCreate: 'Custom Create',
     choosePreset: 'Choose Preset',
     agentSettings: 'Agent Settings',
     agentName: 'Name',

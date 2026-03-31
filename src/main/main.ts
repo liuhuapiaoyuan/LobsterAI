@@ -2786,6 +2786,15 @@ if (!gotTheLock) {
     }
   });
 
+  ipcMain.handle('agents:presetsCatalog', async () => {
+    try {
+      const presets = getAgentManager().getPresetAgentsCatalog();
+      return { success: true, presets };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to get presets catalog' };
+    }
+  });
+
   ipcMain.handle('agents:addPreset', async (_event, presetId: string) => {
     try {
       const agent = getAgentManager().addPresetAgent(presetId);

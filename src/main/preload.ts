@@ -161,6 +161,10 @@ contextBridge.exposeInMainWorld('electron', {
       const result = await ipcRenderer.invoke('agents:presets');
       return result?.success ? result.presets : [];
     },
+    presetsCatalog: async () => {
+      const result = await ipcRenderer.invoke('agents:presetsCatalog');
+      return result?.success ? result.presets : [];
+    },
     addPreset: async (presetId: string) => {
       const result = await ipcRenderer.invoke('agents:addPreset', presetId);
       return result?.success ? result.agent : null;
