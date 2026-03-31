@@ -485,6 +485,7 @@ const App: React.FC = () => {
           onShowSkills={handleShowSkills}
           onShowCowork={handleShowCowork}
           onShowAgents={handleShowAgents}
+          onShowLobsterPond={handleShowLobsterPond}
         />
       </MainWorkspaceLayout>
 

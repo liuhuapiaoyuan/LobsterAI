@@ -36,8 +36,10 @@ const LobsterPondView: React.FC<LobsterPondViewProps> = ({
   const [addingPreset, setAddingPreset] = useState<string | null>(null);
 
   useEffect(() => {
-    agentService.loadAgents();
-    agentService.getPresetsCatalog().then(setCatalog);
+    void (async () => {
+      await agentService.loadAgents();
+      setCatalog(await agentService.getPresetsCatalog());
+    })();
   }, []);
 
   useEffect(() => {

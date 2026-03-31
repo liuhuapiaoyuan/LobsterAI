@@ -5,7 +5,6 @@ import { agentService } from '../../services/agent';
 import { coworkService } from '../../services/cowork';
 import { i18nService } from '../../services/i18n';
 import { PlusIcon } from '@heroicons/react/24/outline';
-import type { PresetAgent } from '../../types/agent';
 import AgentCreateModal from './AgentCreateModal';
 import AgentSettingsPanel from './AgentSettingsPanel';
 import SidebarToggleIcon from '../icons/SidebarToggleIcon';
@@ -17,6 +16,7 @@ interface AgentsViewProps {
   onToggleSidebar?: () => void;
   onNewChat?: () => void;
   onShowCowork?: () => void;
+  onShowLobsterPond?: () => void;
   updateBadge?: React.ReactNode;
 }
 
@@ -25,39 +25,21 @@ const AgentsView: React.FC<AgentsViewProps> = ({
   onToggleSidebar,
   onNewChat,
   onShowCowork,
+  onShowLobsterPond,
   updateBadge,
 }) => {
   const isMac = window.electron.platform === 'darwin';
   const agents = useSelector((state: RootState) => state.agent.agents);
   const currentAgentId = useSelector((state: RootState) => state.agent.currentAgentId);
-  const [presets, setPresets] = useState<PresetAgent[]>([]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [settingsAgentId, setSettingsAgentId] = useState<string | null>(null);
-  const [addingPreset, setAddingPreset] = useState<string | null>(null);
 
   useEffect(() => {
     agentService.loadAgents();
-    agentService.getPresets().then(setPresets);
   }, []);
 
-  // Refresh presets when agents change (to update installed status)
-  useEffect(() => {
-    agentService.getPresets().then(setPresets);
-  }, [agents]);
-
   const enabledAgents = agents.filter((a) => a.enabled && a.id !== 'main');
-  const presetAgents = enabledAgents.filter((a) => a.source === 'preset');
   const customAgents = enabledAgents.filter((a) => a.source === 'custom');
-  const uninstalledPresets = presets.filter((p) => !p.installed);
-
-  const handleAddPreset = async (presetId: string) => {
-    setAddingPreset(presetId);
-    try {
-      await agentService.addPreset(presetId);
-    } finally {
-      setAddingPreset(null);
-    }
-  };
 
   const handleSwitchAgent = (agentId: string) => {
     agentService.switchAgent(agentId);
@@ -100,48 +82,29 @@ const AgentsView: React.FC<AgentsViewProps> = ({
       <div className="flex-1 overflow-y-auto min-h-0 [scrollbar-gutter:stable]">
         <div className="px-4 py-6">
           {/* Subtitle */}
-          <p className="text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary mb-6">
+          <p className="text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary mb-3">
             {i18nService.t('agentsSubtitle')}
           </p>
-
-          {/* Preset Agents Section */}
-          {(presetAgents.length > 0 || uninstalledPresets.length > 0) && (
-            <div className="mb-8">
-              <h2 className="text-sm font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary mb-3">
-                {i18nService.t('presetAgents')}
-              </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-4">
-                {/* Installed presets */}
-                {presetAgents.map((agent) => (
-                  <AgentCard
-                    key={agent.id}
-                    icon={agent.icon}
-                    name={agent.name}
-                    description={agent.description}
-                    isActive={agent.id === currentAgentId}
-                    onClick={() => setSettingsAgentId(agent.id)}
-                  />
-                ))}
-                {/* Uninstalled presets */}
-                {uninstalledPresets.map((preset) => (
-                  <UninstalledPresetCard
-                    key={preset.id}
-                    icon={preset.icon}
-                    name={preset.name}
-                    description={preset.description}
-                    isAdding={addingPreset === preset.id}
-                    onAdd={() => handleAddPreset(preset.id)}
-                  />
-                ))}
-              </div>
+          {/* {onShowLobsterPond && (
+            <div className="mb-6 rounded-xl border border-claude-border/80 bg-claude-surface/60 px-3 py-2.5 dark:border-claude-darkBorder/80 dark:bg-claude-darkSurface/50">
+              <p className="text-xs leading-relaxed text-claude-textSecondary dark:text-claude-darkTextSecondary">
+                {i18nService.t('agentsPresetInLobsterPond')}
+              </p>
+              <button
+                type="button"
+                onClick={onShowLobsterPond}
+                className="mt-2 text-sm font-medium text-claude-accent hover:underline"
+              >
+                {i18nService.t('goToLobsterPond')}
+              </button>
             </div>
-          )}
+          )} */}
 
           {/* Custom Agents Section */}
           <div>
-            <h2 className="text-sm font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary mb-3">
+            {/* <h2 className="text-sm font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary mb-3">
               {i18nService.t('myCustomAgents')}
-            </h2>
+            </h2> */}
             <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-4">
               {customAgents.map((agent) => (
                 <AgentCard

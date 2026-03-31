@@ -1,3 +1,4 @@
+import { PRESET_AGENT_IDS } from '@shared/presetAgentIds';
 import { store } from '../store';
 import {
   setAgents,
@@ -119,15 +120,56 @@ class AgentService {
     }
   }
 
-  /** All built-in presets with install flags (虾池). */
+  /**
+   * All built-in presets with install flags (虾池).
+   * Uses IPC `agents:presetsCatalog` when available; if the main process is stale
+   * (no handler) merges `agents:presets` + Redux agent list — see `buildPresetsCatalogFallback`.
+   */
   async getPresetsCatalog(): Promise<PresetAgent[]> {
     try {
-      const presets = await window.electron?.agents?.presetsCatalog();
-      return presets ?? [];
+      const presets = await window.electron?.agents?.presetsCatalog?.();
+      if (Array.isArray(presets) && presets.length > 0) {
+        return presets;
+      }
     } catch (error) {
-      console.error('Failed to get presets catalog:', error);
-      return [];
+      console.warn('[agentService] presetsCatalog IPC failed, using fallback:', error);
     }
+    return this.buildPresetsCatalogFallback();
+  }
+
+  /** Rebuild catalog without `agents:presetsCatalog` (older or unrestarted main). */
+  private async buildPresetsCatalogFallback(): Promise<PresetAgent[]> {
+    const uninstalled = await this.getPresets();
+    const agents = store.getState().agent.agents;
+    const installedPresetIds = new Set(
+      agents.filter((a) => a.source === 'preset').map((a) => a.id)
+    );
+    const out: PresetAgent[] = [];
+    for (const id of PRESET_AGENT_IDS) {
+      if (installedPresetIds.has(id)) {
+        const a = agents.find((x) => x.source === 'preset' && x.id === id);
+        if (a) {
+          out.push({
+            id: a.id,
+            name: a.name,
+            icon: a.icon,
+            description: a.description,
+            systemPrompt: '',
+            skillIds: a.skillIds ?? [],
+            installed: true,
+          });
+        }
+        continue;
+      }
+      const u = uninstalled.find((p) => p.id === id);
+      if (u) {
+        out.push({
+          ...u,
+          installed: false,
+        });
+      }
+    }
+    return out;
   }
 
   async addPreset(presetId: string): Promise<Agent | null> {

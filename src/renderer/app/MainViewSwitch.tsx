@@ -20,6 +20,7 @@ export interface MainViewSwitchProps {
   onShowSkills: () => void;
   onShowCowork: () => void;
   onShowAgents?: () => void;
+  onShowLobsterPond?: () => void;
 }
 
 const MainViewSwitch: React.FC<MainViewSwitchProps> = ({
@@ -32,6 +33,7 @@ const MainViewSwitch: React.FC<MainViewSwitchProps> = ({
   onShowSkills,
   onShowCowork,
   onShowAgents,
+  onShowLobsterPond,
 }) => (
   <>
     <EngineStartupOverlay />
@@ -71,6 +73,7 @@ const MainViewSwitch: React.FC<MainViewSwitchProps> = ({
         onToggleSidebar={onToggleSidebar}
         onNewChat={onNewChat}
         onShowCowork={onShowCowork}
+        onShowLobsterPond={onShowLobsterPond}
         updateBadge={updateBadgeWhenCollapsed}
       />
     ) : (
