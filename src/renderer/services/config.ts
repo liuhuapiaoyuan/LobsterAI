@@ -115,7 +115,9 @@ class ConfigService {
               Object.entries({
                 ...(defaultConfig.providers ?? {}),
                 ...storedConfig.providers,
-              }).map(([providerKey, providerConfig]) => [
+              })
+                .filter(([providerKey]) => providerKey !== 'xiaomi')
+                .map(([providerKey, providerConfig]) => [
                 providerKey,
                 (() => {
                   const mergedProvider = {
@@ -153,6 +155,10 @@ class ConfigService {
         // Migrate model.defaultModel if it was removed
         const allRemovedIds = Object.values(REMOVED_PROVIDER_MODELS).flat();
         const migratedModel = { ...defaultConfig.model, ...storedConfig.model };
+        if (migratedModel.defaultModelProvider === 'xiaomi') {
+          migratedModel.defaultModelProvider = defaultConfig.model.defaultModelProvider;
+          migratedModel.defaultModel = defaultConfig.model.defaultModel;
+        }
         if (allRemovedIds.includes(migratedModel.defaultModel)) {
           migratedModel.defaultModel = defaultConfig.model.defaultModel;
         }

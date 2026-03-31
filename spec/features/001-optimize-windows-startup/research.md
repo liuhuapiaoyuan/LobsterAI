@@ -9,7 +9,7 @@
 
 **Decision**: Compile cache warmup is already implemented in `scripts/nsis-installer.nsh`.
 **Rationale**: The installer runs `warmup-compile-cache.cjs` after extraction, pre-compiling `gateway-bundle.mjs` via V8 compile cache. This should reduce first-launch gateway boot from ~35s to ~5s.
-**Issue**: Need to verify this warmup is actually succeeding on Windows. Check `%APPDATA%\LobsterAI\install-timing.log` for `warmup-done` entry and verify the cache directory is populated.
+**Issue**: Need to verify this warmup is actually succeeding on Windows. Check `%APPDATA%\YuanAI\install-timing.log` for `warmup-done` entry and verify the cache directory is populated.
 
 ### Finding 2: Build script deletes bare files, then first launch re-extracts them
 

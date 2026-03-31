@@ -90,7 +90,7 @@ export function registerScheduledTaskHandlers(deps: ScheduledTaskHandlerDeps): v
             };
           }
           // Strip IM subtype prefix from delivery.to before passing to OpenClaw.
-          // LobsterAI stores conversationIds with subtype prefixes (e.g. "direct:ou_xxx",
+          // YuanAI stores conversationIds with subtype prefixes (e.g. "direct:ou_xxx",
           // "group:oc_xxx") but OpenClaw channel adapters expect raw platform IDs
           // (e.g. "ou_xxx", "oc_xxx").
           const rawTo = delivery.to;

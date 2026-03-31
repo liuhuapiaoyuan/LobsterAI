@@ -21,10 +21,10 @@
 !macro customInstall
   ; ─── Install Timing Log ───
   ; Write timestamps to help diagnose slow installation phases.
-  ; Log file: %APPDATA%\LobsterAI\install-timing.log
+  ; Log file: %APPDATA%\YuanAI\install-timing.log
 
-  CreateDirectory "$APPDATA\LobsterAI"
-  FileOpen $2 "$APPDATA\LobsterAI\install-timing.log" w
+  CreateDirectory "$APPDATA\YuanAI"
+  FileOpen $2 "$APPDATA\YuanAI\install-timing.log" w
 
   ${GetTime} "" "L" $3 $4 $5 $6 $7 $8 $9
   FileWrite $2 "extract-done: $5-$4-$3 $6:$7:$8$\r$\n"

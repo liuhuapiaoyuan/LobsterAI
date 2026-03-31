@@ -3,7 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LobsterAI</title>
+    <title>YuanAI</title>
+    <script type="module">
+      // first npm i react-grab
+      // then in head:
+      if (import.meta.env.DEV) {
+        import("react-grab");
+      }
+    </script>
     <script>
       // 在页面加载前预设主题，避免闪烁
       (function() {

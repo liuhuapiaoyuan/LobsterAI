@@ -2,11 +2,11 @@
 
 ## Overview
 
-Add a "prevent sleep" toggle to Settings > General tab, preventing the system from sleeping while LobsterAI is running. Follows the existing autoLaunch pattern.
+Add a "prevent sleep" toggle to Settings > General tab, preventing the system from sleeping while YuanAI is running. Follows the existing autoLaunch pattern.
 
 ## User Story
 
-As a user running long AI tasks or IM bots, I want LobsterAI to prevent my computer from sleeping, so tasks aren't interrupted by the system going to sleep.
+As a user running long AI tasks or IM bots, I want YuanAI to prevent my computer from sleeping, so tasks aren't interrupted by the system going to sleep.
 
 ## Design
 

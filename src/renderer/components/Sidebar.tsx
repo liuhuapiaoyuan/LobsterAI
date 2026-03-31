@@ -306,7 +306,9 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       ) : (
         <div className="px-3 pb-3 pt-1 flex items-center gap-1">
-          <LoginButton />
+          <div className="hidden">
+            <LoginButton />
+          </div>
           <div className="flex-1" />
           <button
             type="button"

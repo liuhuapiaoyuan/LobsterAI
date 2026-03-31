@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a "prevent sleep" toggle in Settings > General that keeps the system awake while LobsterAI is running.
+**Goal:** Add a "prevent sleep" toggle in Settings > General that keeps the system awake while YuanAI is running.
 
 **Architecture:** Follows the existing autoLaunch pattern — independent IPC channel, store key, and immediate toggle (no save button). Main process uses Electron's `powerSaveBlocker` API.
 

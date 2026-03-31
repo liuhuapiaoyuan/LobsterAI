@@ -39,7 +39,7 @@ import {
   MiniMaxIcon,
   YouDaoZhiYunIcon,
   QwenIcon,
-  XiaomiIcon,
+  ShuangyuanIcon,
   StepfunIcon,
   VolcengineIcon,
   OpenRouterIcon,
@@ -60,6 +60,7 @@ interface SettingsProps extends SettingsOpenOptions {
 }
 
 const providerKeys = [
+  'shuangyuan',
   'openai',
   'gemini',
   'anthropic',
@@ -71,7 +72,6 @@ const providerKeys = [
   'qwen',
   'youdaozhiyun',
   'stepfun',
-  'xiaomi',
   'openrouter',
   'ollama',
   'custom',
@@ -140,7 +140,7 @@ const providerMeta: Record<ProviderType, { label: string; icon: React.ReactNode 
   minimax: { label: 'MiniMax', icon: <MiniMaxIcon /> },
   youdaozhiyun: { label: 'Youdao', icon: <YouDaoZhiYunIcon /> },
   qwen: { label: 'Qwen', icon: <QwenIcon /> },
-  xiaomi: { label: 'Xiaomi', icon: <XiaomiIcon /> },
+  shuangyuan: { label: 'Shuangyuan (双源)', icon: <ShuangyuanIcon /> },
   stepfun: { label: 'StepFun', icon: <StepfunIcon /> },
   volcengine: { label: 'Volcengine', icon: <VolcengineIcon /> },
   openrouter: { label: 'OpenRouter', icon: <OpenRouterIcon /> },
@@ -169,9 +169,9 @@ const providerSwitchableDefaultBaseUrls: Partial<Record<ProviderType, { anthropi
     anthropic: 'https://dashscope.aliyuncs.com/apps/anthropic',
     openai: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
   },
-  xiaomi: {
-    anthropic: 'https://api.xiaomimimo.com/anthropic',
-    openai: 'https://api.xiaomimimo.com/v1/chat/completions',
+  shuangyuan: {
+    anthropic: 'https://ai-api.qzsyzn.com/anthropic',
+    openai: 'https://ai-api.qzsyzn.com/v1/chat/completions',
   },
   volcengine: {
     anthropic: 'https://ark.cn-beijing.volces.com/api/compatible',
@@ -3291,7 +3291,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice, onUpda
             {/* Logo & App Name */}
             <img
               src="logo.png"
-              alt="LobsterAI"
+              alt="YuanAI"
               className="w-16 h-16 mb-3 cursor-pointer select-none"
               onClick={() => {
                 const next = logoClickCount + 1;
@@ -3301,7 +3301,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice, onUpda
                 }
               }}
             />
-            <h3 className="text-lg font-semibold dark:text-claude-darkText text-claude-text">LobsterAI</h3>
+            <h3 className="text-lg font-semibold dark:text-claude-darkText text-claude-text">YuanAI</h3>
             <span className="text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary mt-1">v{appVersion}</span>
 
             {/* Info Card */}

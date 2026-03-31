@@ -153,7 +153,7 @@ export interface AppConfig {
         supportsImage?: boolean;
       }>;
     };
-    xiaomi: {
+    shuangyuan: {
       enabled: boolean;
       apiKey: string;
       baseUrl: string;
@@ -347,10 +347,10 @@ export const defaultConfig: AppConfig = {
         { id: 'qwen3-coder-plus', name: 'Qwen3 Coder Plus', supportsImage: false }
       ]
     },
-    xiaomi: {
+    shuangyuan: {
       enabled: false,
       apiKey: '',
-      baseUrl: 'https://api.xiaomimimo.com/anthropic',
+      baseUrl: 'https://ai-api.qzsyzn.com/anthropic',
       apiFormat: 'anthropic',
       models: [
         { id: 'mimo-v2-flash', name: 'MiMo V2 Flash', supportsImage: false }
@@ -433,7 +433,7 @@ export const CONFIG_KEYS = {
 };
 
 // 模型提供商分类
-export const CHINA_PROVIDERS = ['deepseek', 'moonshot', 'qwen', 'zhipu', 'minimax', 'volcengine', 'youdaozhiyun', 'stepfun', 'xiaomi', 'ollama', 'custom'] as const;
+export const CHINA_PROVIDERS = ['shuangyuan', 'deepseek', 'moonshot', 'qwen', 'zhipu', 'minimax', 'volcengine', 'youdaozhiyun', 'stepfun', 'ollama', 'custom'] as const;
 export const GLOBAL_PROVIDERS = ['openai', 'gemini', 'anthropic', 'openrouter'] as const;
 export const EN_PRIORITY_PROVIDERS = ['openai', 'anthropic', 'gemini'] as const;
 

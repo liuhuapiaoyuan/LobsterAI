@@ -126,10 +126,10 @@ const MANAGED_WEB_SEARCH_POLICY_PROMPT = [
   'When you need live web information:',
   '- If you already have a specific URL, use `web_fetch`.',
   '- If you need search discovery, dynamic pages, or interactive browsing, use the built-in `browser` tool.',
-  '- Only use the LobsterAI `web-search` skill when local command execution is available. Native channel sessions may deny `exec`, so prefer `browser` or `web_fetch` there.',
+  '- Only use the YuanAI `web-search` skill when local command execution is available. Native channel sessions may deny `exec`, so prefer `browser` or `web_fetch` there.',
   '- Exception: the `imap-smtp-email` skill must always use `exec` to run its scripts, even in native channel sessions. Do not skip it because of exec restrictions.',
   '',
-  'Do not claim you searched the web unless you actually used `browser`, `web_fetch`, or the LobsterAI `web-search` skill.',
+  'Do not claim you searched the web unless you actually used `browser`, `web_fetch`, or the YuanAI `web-search` skill.',
 ].join('\n');
 
 const MANAGED_EXEC_SAFETY_PROMPT = [
@@ -1385,13 +1385,13 @@ export class OpenClawConfigSync {
   }
 
   /**
-   * Resolve the LobsterAI SKILLs installation directory for OpenClaw's
+   * Resolve the YuanAI SKILLs installation directory for OpenClaw's
    * `skills.load.extraDirs` configuration.
    *
    * Cross-platform paths (via Electron app.getPath('userData')):
-   *   macOS:   ~/Library/Application Support/LobsterAI/SKILLs
-   *   Windows: %APPDATA%/LobsterAI/SKILLs
-   *   Linux:   ~/.config/LobsterAI/SKILLs
+   *   macOS:   ~/Library/Application Support/YuanAI/SKILLs
+   *   Windows: %APPDATA%/YuanAI/SKILLs
+   *   Linux:   ~/.config/YuanAI/SKILLs
    */
   private resolveSkillsExtraDirs(): string[] {
     const userDataSkillsDir = path.join(app.getPath('userData'), 'SKILLs');
@@ -1409,8 +1409,8 @@ export class OpenClawConfigSync {
   }
 
   /**
-   * Build per-skill `enabled` overrides from the LobsterAI SkillManager state,
-   * so that skills disabled in the LobsterAI UI are also hidden from OpenClaw.
+   * Build per-skill `enabled` overrides from the YuanAI SkillManager state,
+   * so that skills disabled in the YuanAI UI are also hidden from OpenClaw.
    */
   private buildSkillEntries(): Record<string, { enabled: boolean }> {
     const skills = this.getSkillsList?.() ?? [];
@@ -1425,10 +1425,10 @@ export class OpenClawConfigSync {
    * Sync AGENTS.md to the OpenClaw workspace directory.
    * Embeds the skills routing prompt and system prompt so that OpenClaw's
    * native channel connectors (DingTalk, Feishu, etc.) can discover and
-   * invoke LobsterAI skills.
+   * invoke YuanAI skills.
    */
   private syncAgentsMd(workspaceDir: string, coworkConfig: CoworkConfig): string | undefined {
-    const MARKER = '<!-- LobsterAI managed: do not edit below this line -->';
+    const MARKER = '<!-- YuanAI managed: do not edit below this line -->';
 
     try {
       ensureDir(workspaceDir);

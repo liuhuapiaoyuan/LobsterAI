@@ -2,7 +2,7 @@
  * OpenClaw Channel Session Sync
  *
  * Discovers and maps sessions created by OpenClaw channel extensions (e.g. Telegram)
- * to local Cowork sessions so that conversations are visible in the LobsterAI UI.
+ * to local Cowork sessions so that conversations are visible in the YuanAI UI.
  */
 
 import type { CoworkStore } from '../coworkStore';
@@ -249,9 +249,9 @@ export class OpenClawChannelSessionSync {
    * Returns the local sessionId if the sessionKey belongs to a channel, or null if not.
    */
   resolveOrCreateSession(sessionKey: string): string | null {
-    // 1. Skip LobsterAI-originated sessions
+    // 1. Skip YuanAI-originated sessions
     if (isManagedSessionKey(sessionKey)) {
-      console.log('[ChannelSessionSync] skipped: LobsterAI-originated session');
+      console.log('[ChannelSessionSync] skipped: YuanAI-originated session');
       return null;
     }
 

@@ -612,7 +612,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   /**
    * Server-side agent timeout in seconds (mirrors agents.defaults.timeoutSeconds in openclaw config).
    * Used to set a client-side fallback timer that fires slightly after the server timeout,
-   * so LobsterAI can recover even when the gateway fails to deliver the abort event.
+   * so YuanAI can recover even when the gateway fails to deliver the abort event.
    */
   agentTimeoutSeconds = OPENCLAW_AGENT_TIMEOUT_SECONDS;
   private static readonly CLIENT_TIMEOUT_GRACE_MS = 30_000;
@@ -802,7 +802,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
    * Ensure the gateway WebSocket client is connected.
    * Called when IM channels (e.g. Telegram) are enabled in OpenClaw mode
    * so that channel-originated events can be received without waiting
-   * for a LobsterAI-initiated session.
+   * for a YuanAI-initiated session.
    */
   async connectGatewayIfNeeded(): Promise<void> {
     if (this.gatewayClient) {
@@ -1293,9 +1293,9 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
 
   private buildSystemPromptPrefix(systemPrompt: string): string {
     return [
-      '[LobsterAI system instructions]',
+      '[YuanAI system instructions]',
       'Apply the instructions below as the highest-priority guidance for this session.',
-      'If earlier LobsterAI system instructions exist, replace them with this version.',
+      'If earlier YuanAI system instructions exist, replace them with this version.',
       systemPrompt,
     ].join('\n');
   }
@@ -1342,7 +1342,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     });
 
     return [
-      '[Context bridge from previous LobsterAI conversation]',
+      '[Context bridge from previous YuanAI conversation]',
       'Use this prior context for continuity. Focus your final answer on the current request.',
       ...lines,
     ].join('\n');
@@ -1431,7 +1431,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     const client = new GatewayClient({
       url: connection.url,
       token: connection.token,
-      clientDisplayName: 'LobsterAI',
+      clientDisplayName: 'YuanAI',
       clientVersion: app.getVersion(),
       mode: 'backend',
       caps: [OPENCLAW_GATEWAY_TOOL_EVENTS_CAP],
@@ -3400,7 +3400,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   /**
    * Sync user messages from gateway chat.history that haven't been added to the local store yet.
    * Used for channel-originated sessions (e.g. Telegram) where user messages arrive via the
-   * gateway rather than the LobsterAI UI.
+   * gateway rather than the YuanAI UI.
    *
    * Called at the start of a new turn (via prefetchChannelUserMessages) so that user messages
    * appear before the assistant's streaming response. Both chat and agent events are buffered
