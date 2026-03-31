@@ -48,7 +48,7 @@ import {
 } from './libs/openclawChannelSessionSync';
 import { IMGatewayManager, IMGatewayConfig } from './im';
 import type { Platform } from './im/types';
-import { APP_NAME } from './appConstants';
+import { APP_NAME, DEFAULT_HOME_PROJECT_ROOT } from './appConstants';
 import { getSkillServiceManager } from './skillServices';
 import { createTray, destroyTray, updateTrayMenu } from './trayManager';
 import { setLanguage, t } from './i18n';
@@ -4290,7 +4290,7 @@ if (!gotTheLock) {
     // We don't trigger permission dialogs at startup to avoid annoying users
 
     // Ensure default working directory exists
-    const defaultProjectDir = path.join(os.homedir(), 'lobsterai', 'project');
+    const defaultProjectDir = path.join(os.homedir(), DEFAULT_HOME_PROJECT_ROOT, 'project');
     if (!fs.existsSync(defaultProjectDir)) {
       fs.mkdirSync(defaultProjectDir, { recursive: true });
       console.log('Created default project directory:', defaultProjectDir);

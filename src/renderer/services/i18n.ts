@@ -443,7 +443,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
 
     // Multi-Agent 管理
     createAgent: '创建 Agent',
-    myAgents: '我的 Agent',
+    myAgents: '我的虾池',
     customCreate: '自定义创建',
     choosePreset: '选择预设',
     agentSettings: 'Agent 设置',
@@ -458,7 +458,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
     agentSkillsSearch: '搜索技能...',
     agentSkillsNone: '点击选择技能',
     agentsSubtitle: '为您的智能体提供专属人设与技能组合',
-    presetAgents: '预设 Agent',
+    presetAgents: '预设虾',
     myCustomAgents: '我创建的 Agent',
     createNewAgent: '新建 Agent',
     switchToAgent: '使用此 Agent',
@@ -771,7 +771,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
     fileCreated: '文件已创建',
 
     // IM Bot
-    imBot: 'IM 机器人',
+    imBot: '通道',
     dingtalk: '钉钉',
     feishu: '飞书',
     qq: 'QQ',
