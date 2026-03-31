@@ -2126,7 +2126,7 @@ const CoworkSessionDetail: React.FC<CoworkSessionDetailProps> = ({
           <div className="h-20" />
 
              {/* Input Area */}
-      <div className="sticky bottom-0  px-4 pb-5 pt-4 ">
+      <div className="sticky bottom-0  z-50 px-4 pb-5 pt-4 ">
         
       {/* Streaming Activity Bar */}
       {isStreaming && <StreamingActivityBar messages={currentSession.messages} />}
