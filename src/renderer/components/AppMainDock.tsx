@@ -4,7 +4,6 @@ import {
   MessageSquarePlus,
   Plug2,
   Puzzle,
-  Sparkles,
   Users,
 } from 'lucide-react';
 import { DockTabs, type DockNavItem } from '@/components/ui/dock-tabs';
