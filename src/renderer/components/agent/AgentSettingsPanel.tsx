@@ -144,7 +144,7 @@ const AgentSettingsPanel: React.FC<AgentSettingsPanelProps> = ({ agentId, onClos
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
-        className="w-full max-w-2xl mx-4 rounded-xl shadow-xl bg-white dark:bg-claude-darkSurface border dark:border-claude-darkBorder border-claude-border max-h-[80vh] flex flex-col"
+        className="w-full max-w-2xl mx-4 rounded-xl shadow-xl bg-white dark:bg-claude-darkSurface  dark:border-claude-darkBorder border-claude-border max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header: agent icon + name + close */}
