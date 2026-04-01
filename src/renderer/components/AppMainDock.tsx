@@ -95,7 +95,7 @@ const AppMainDock: React.FC<AppMainDockProps> = ({
     {
       id: 'lobsterPond',
       label: i18nService.t('lobsterPond'),
-      icon:<img src="/lobster-yuan.png" className='w-6 h-6 group-hover:scale-150 transition-transform duration-300 ' /> , 
+      icon:<img src="lobster-yuan.png" className='w-6 h-6 group-hover:scale-150 transition-transform duration-300 ' /> , 
       // icon: <Sparkles className="h-5 w-5" strokeWidth={2} />,
       color: 'bg-rose-50',
     },
