@@ -72,13 +72,13 @@ const CoworkSearchModal: React.FC<CoworkSearchModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="modal-content w-full max-w-2xl mt-10 rounded-2xl border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-claude-surface shadow-modal overflow-hidden"
+        className="modal-content w-full max-w-2xl mt-10 rounded-2xl  dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-claude-surface shadow-modal overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-label={i18nService.t('search')}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center gap-3 px-4 py-3 border-b dark:border-claude-darkBorder border-claude-border">
+        <div className="flex items-center gap-3 px-4 py-3  dark:border-claude-darkBorder border-claude-border">
           <div className="relative flex-1">
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 dark:text-claude-darkTextSecondary text-claude-textSecondary" />
             <input

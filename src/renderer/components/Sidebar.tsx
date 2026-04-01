@@ -147,14 +147,31 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className={`${isMac ? 'pl-[68px]' : ''}`}>
             {updateBadge}
           </div>
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            className="non-draggable h-8 w-8 inline-flex items-center justify-center rounded-lg dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors"
-            aria-label={isCollapsed ? i18nService.t('expand') : i18nService.t('collapse')}
-          >
-            <SidebarToggleIcon className="h-4 w-4" isCollapsed={isCollapsed} />
-          </button>
+          <div className="non-draggable flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => {
+                onShowCowork();
+                setIsSearchOpen(true);
+              }}
+              className={`h-8 w-8 inline-flex items-center justify-center rounded-lg transition-colors ${
+                isSearchOpen
+                  ? 'bg-claude-accent/12 text-claude-accent ring-1 ring-claude-accent/20 hover:bg-claude-accent/18'
+                  : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover'
+              }`}
+              aria-label={i18nService.t('search')}
+            >
+              <SearchIcon className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="h-8 w-8 inline-flex items-center justify-center rounded-lg dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors"
+              aria-label={isCollapsed ? i18nService.t('expand') : i18nService.t('collapse')}
+            >
+              <SidebarToggleIcon className="h-4 w-4" isCollapsed={isCollapsed} />
+            </button>
+          </div>
         </div>
         <div className="mt-2.5 rounded-xl border border-claude-border/80 bg-claude-surface/90 p-1 shadow-sm dark:border-claude-darkBorder/90 dark:bg-claude-darkSurface/55 dark:shadow-none">
           <div className="space-y-0.5">
@@ -169,17 +186,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             >
               <ComposeIcon className="h-4 w-4 shrink-0 opacity-90" />
               {i18nService.t('newChat')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onShowCowork();
-                setIsSearchOpen(true);
-              }}
-              className="w-full inline-flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-snug transition-colors dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover/90 dark:hover:bg-claude-darkSurfaceHover/80"
-            >
-              <SearchIcon className="h-4 w-4 shrink-0 opacity-90" />
-              {i18nService.t('search')}
             </button>
             <button
               type="button"
