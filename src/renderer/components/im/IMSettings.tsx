@@ -714,9 +714,11 @@ const IMSettings: React.FC = () => {
   const wecomConnected = status.wecom?.connected ?? false;
   const weixinConnected = status.weixin?.connected ?? false;
 
-  // Compute visible platforms based on language
+  // Compute visible platforms based on language (NIM / 云信 and NetEase Bee / 小蜜蜂 are hidden here only)
   const platforms = useMemo<Platform[]>(() => {
-    return getVisibleIMPlatforms(language) as Platform[];
+    return (getVisibleIMPlatforms(language) as Platform[]).filter(
+      (p) => p !== 'nim' && p !== 'netease-bee'
+    );
   }, [language]);
 
   // Ensure activePlatform is always in visible platforms when language changes

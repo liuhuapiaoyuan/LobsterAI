@@ -63,7 +63,7 @@ const LobsterPondView: React.FC<LobsterPondViewProps> = ({
 
   return (
     <div className="flex-1 flex flex-col dark:bg-claude-darkBg bg-claude-bg h-full">
-      <div className="draggable flex h-12 items-center justify-between px-4 border-b dark:border-claude-darkBorder border-claude-border shrink-0">
+      <div className="draggable flex h-12 items-center justify-between px-4  dark:border-claude-darkBorder border-claude-border shrink-0">
         <div className="flex items-center space-x-3 h-8">
           {isSidebarCollapsed && (
             <div className={`non-draggable flex items-center gap-1 ${isMac ? 'pl-[68px]' : ''}`}>

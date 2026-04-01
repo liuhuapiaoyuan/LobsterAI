@@ -141,7 +141,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
     
     // 快捷键
     keyboardShortcuts: '键盘快捷键',
-    newChat: '新建任务',
+    newChat: '新对话',
     search: '搜索任务',
     openSettings: '打开设置',
     close: '关闭',
@@ -443,7 +443,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
 
     // Multi-Agent 管理
     createAgent: '创建 Agent',
-    myAgents: '智能体',
+    myAgents: '我的',
     lobsterPond: '虾池',
     lobsterPondSubtitle: '浏览官方预制龙虾，一键添加或进入协作对话。',
     presetGoChat: '去聊天',
@@ -979,7 +979,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
     preventSleepDescription: '防止系统在应用运行时进入睡眠模式',
 
     // 定时任务
-    scheduledTasks: '定时任务',
+    scheduledTasks: '任务',
     scheduledTasksTitle: '定时任务',
     scheduledTasksNewTask: '新建任务',
     scheduledTasksEmptyState: '暂无定时任务',
@@ -1314,7 +1314,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
     
     // Shortcuts
     keyboardShortcuts: 'Keyboard Shortcuts',
-    newChat: 'New Task',
+    newChat: 'New chat',
     search: 'Search Tasks',
     openSettings: 'Open Settings',
     close: 'Close',
@@ -1614,7 +1614,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
 
     // Multi-Agent management
     createAgent: 'Create Agent',
-    myAgents: 'Agents',
+    myAgents: 'My agents',
     lobsterPond: 'Lobster Pond',
     lobsterPondSubtitle: 'Browse official preset lobsters, add them to your pool, or start a chat.',
     presetGoChat: 'Chat',
@@ -2150,7 +2150,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
     preventSleepDescription: 'Prevent the system from sleeping while the app is running',
 
     // Scheduled Tasks
-    scheduledTasks: 'Scheduled Tasks',
+    scheduledTasks: 'Tasks',
     scheduledTasksTitle: 'Scheduled Tasks',
     scheduledTasksNewTask: 'New Task',
     scheduledTasksEmptyState: 'No scheduled tasks',

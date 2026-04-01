@@ -24,6 +24,7 @@ import { useAppBootstrap } from './app/useAppBootstrap';
 import MainViewSwitch, { type AppMainView } from './app/MainViewSwitch';
 import { AppLoadingView, AppInitErrorView } from './app/AppLoadingStates';
 import MainWorkspaceLayout from './layouts/MainWorkspaceLayout';
+import AppMainDock from './components/AppMainDock';
 
 const App: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
@@ -461,14 +462,7 @@ const App: React.FC = () => {
           <Sidebar
             onShowLogin={handleShowLogin}
             onShowSettings={handleShowSettings}
-            activeView={mainView}
-            onShowSkills={handleShowSkills}
             onShowCowork={handleShowCowork}
-            onShowScheduledTasks={handleShowScheduledTasks}
-            onShowMcp={handleShowMcp}
-            onShowLobsterPond={handleShowLobsterPond}
-            onShowAgents={handleShowAgents}
-            onNewChat={handleNewChat}
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={handleToggleSidebar}
             updateBadge={!isSidebarCollapsed ? updateBadge : null}
@@ -488,6 +482,16 @@ const App: React.FC = () => {
           onShowLobsterPond={handleShowLobsterPond}
         />
       </MainWorkspaceLayout>
+
+      <AppMainDock
+        activeView={mainView}
+        onNewChat={handleNewChat}
+        onShowScheduledTasks={handleShowScheduledTasks}
+        onShowSkills={handleShowSkills}
+        onShowMcp={handleShowMcp}
+        onShowLobsterPond={handleShowLobsterPond}
+        onShowAgents={handleShowAgents}
+      />
 
       {showSettings && (
         <Settings

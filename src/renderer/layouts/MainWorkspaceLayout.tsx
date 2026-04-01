@@ -13,7 +13,7 @@ const MainWorkspaceLayout: React.FC<MainWorkspaceLayoutProps> = ({ isSidebarColl
   <div className="flex flex-1 min-h-0 overflow-hidden">
     {sidebar}
     <div className={`flex-1 min-w-0 py-1.5 pr-1.5 ${isSidebarCollapsed ? 'pl-1.5' : ''}`}>
-      <div className="relative h-full min-h-0 rounded-xl dark:bg-claude-darkBg bg-claude-bg overflow-hidden">{children}</div>
+      <div className="relative h-full min-h-0 rounded-xl dark:bg-claude-darkBg bg-claude-bg overflow-hidden ">{children}</div>
     </div>
   </div>
 );

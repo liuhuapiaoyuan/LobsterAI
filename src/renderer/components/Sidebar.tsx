@@ -7,26 +7,15 @@ import { i18nService } from '../services/i18n';
 import CoworkSessionList from './cowork/CoworkSessionList';
 import CoworkSearchModal from './cowork/CoworkSearchModal';
 import LoginButton from './LoginButton';
-import ComposeIcon from './icons/ComposeIcon';
-import ConnectorIcon from './icons/ConnectorIcon';
 import SearchIcon from './icons/SearchIcon';
-import ClockIcon from './icons/ClockIcon';
-import PuzzleIcon from './icons/PuzzleIcon';
 import SidebarToggleIcon from './icons/SidebarToggleIcon';
 import TrashIcon from './icons/TrashIcon';
-import { ExclamationTriangleIcon, SparklesIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
   onShowSettings: () => void;
   onShowLogin?: () => void;
-  activeView: 'cowork' | 'skills' | 'scheduledTasks' | 'mcp' | 'lobsterPond' | 'agents';
-  onShowSkills: () => void;
   onShowCowork: () => void;
-  onShowScheduledTasks: () => void;
-  onShowMcp: () => void;
-  onShowLobsterPond: () => void;
-  onShowAgents: () => void;
-  onNewChat: () => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   updateBadge?: React.ReactNode;
@@ -34,14 +23,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({
   onShowSettings,
-  activeView,
-  onShowSkills,
   onShowCowork,
-  onShowScheduledTasks,
-  onShowMcp,
-  onShowLobsterPond,
-  onShowAgents,
-  onNewChat,
   isCollapsed,
   onToggleCollapse,
   updateBadge,
@@ -138,7 +120,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`shrink-0 dark:bg-claude-darkSurfaceMuted bg-claude-surfaceMuted flex flex-col sidebar-transition overflow-hidden ${
+      className={`shrink-0 dark:bg-claude-darkSurfaceMuted bg-claude-bg flex flex-col sidebar-transition overflow-hidden ${
         isCollapsed ? 'w-0' : 'w-60'
       }`}
     >
@@ -165,102 +147,24 @@ const Sidebar: React.FC<SidebarProps> = ({
             </button>
             <button
               type="button"
+              onClick={() => onShowSettings()}
+              className="h-8 w-8 inline-flex items-center justify-center rounded-lg dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors"
+              aria-label={i18nService.t('settings')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+                <path d="M14 17H5" />
+                <path d="M19 7h-9" />
+                <circle cx="17" cy="17" r="3" />
+                <circle cx="7" cy="7" r="3" />
+              </svg>
+            </button>
+            <button
+              type="button"
               onClick={onToggleCollapse}
               className="h-8 w-8 inline-flex items-center justify-center rounded-lg dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors"
               aria-label={isCollapsed ? i18nService.t('expand') : i18nService.t('collapse')}
             >
               <SidebarToggleIcon className="h-4 w-4" isCollapsed={isCollapsed} />
-            </button>
-          </div>
-        </div>
-        <div className="mt-2.5 rounded-xl border border-claude-border/80 bg-claude-surface/90 p-1 shadow-sm dark:border-claude-darkBorder/90 dark:bg-claude-darkSurface/55 dark:shadow-none">
-          <div className="space-y-0.5">
-            <button
-              type="button"
-              onClick={onNewChat}
-              className={`w-full inline-flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-snug transition-all ${
-                activeView === 'cowork'
-                  ? 'bg-claude-accent/12 text-claude-accent shadow-sm ring-1 ring-claude-accent/20 hover:bg-claude-accent/18'
-                  : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover/90 dark:hover:bg-claude-darkSurfaceHover/80'
-              }`}
-            >
-              <ComposeIcon className="h-4 w-4 shrink-0 opacity-90" />
-              {i18nService.t('newChat')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsSearchOpen(false);
-                onShowScheduledTasks();
-              }}
-              className={`w-full inline-flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-snug transition-all ${
-                activeView === 'scheduledTasks'
-                  ? 'bg-claude-accent/12 text-claude-accent shadow-sm ring-1 ring-claude-accent/20 hover:bg-claude-accent/18'
-                  : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover/90 dark:hover:bg-claude-darkSurfaceHover/80'
-              }`}
-            >
-              <ClockIcon className="h-4 w-4 shrink-0 opacity-90" />
-              {i18nService.t('scheduledTasks')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsSearchOpen(false);
-                onShowSkills();
-              }}
-              className={`w-full inline-flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-snug transition-all ${
-                activeView === 'skills'
-                  ? 'bg-claude-accent/12 text-claude-accent shadow-sm ring-1 ring-claude-accent/20 hover:bg-claude-accent/18'
-                  : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover/90 dark:hover:bg-claude-darkSurfaceHover/80'
-              }`}
-            >
-              <PuzzleIcon className="h-4 w-4 shrink-0 opacity-90" />
-              {i18nService.t('skills')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsSearchOpen(false);
-                onShowMcp();
-              }}
-              className={`w-full inline-flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-snug transition-all ${
-                activeView === 'mcp'
-                  ? 'bg-claude-accent/12 text-claude-accent shadow-sm ring-1 ring-claude-accent/20 hover:bg-claude-accent/18'
-                  : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover/90 dark:hover:bg-claude-darkSurfaceHover/80'
-              }`}
-            >
-              <ConnectorIcon className="h-4 w-4 shrink-0 opacity-90" />
-              {i18nService.t('mcpServers')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsSearchOpen(false);
-                onShowLobsterPond();
-              }}
-              className={`w-full inline-flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-snug transition-all ${
-                activeView === 'lobsterPond'
-                  ? 'bg-claude-accent/12 text-claude-accent shadow-sm ring-1 ring-claude-accent/20 hover:bg-claude-accent/18'
-                  : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover/90 dark:hover:bg-claude-darkSurfaceHover/80'
-              }`}
-            >
-              <SparklesIcon className="h-4 w-4 shrink-0 opacity-90" />
-              {i18nService.t('lobsterPond')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsSearchOpen(false);
-                onShowAgents();
-              }}
-              className={`w-full inline-flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-snug transition-all ${
-                activeView === 'agents'
-                  ? 'bg-claude-accent/12 text-claude-accent shadow-sm ring-1 ring-claude-accent/20 hover:bg-claude-accent/18'
-                  : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover/90 dark:hover:bg-claude-darkSurfaceHover/80'
-              }`}
-            >
-              <UserGroupIcon className="h-4 w-4 shrink-0 opacity-90" />
-              {i18nService.t('myAgents')}
             </button>
           </div>
         </div>
@@ -330,20 +234,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
       ) : (
-        <div className="px-3 pb-3 pt-1 flex items-center gap-1">
-          <div className="hidden">
-            <LoginButton />
-          </div>
-          <div className="flex-1" />
-          <button
-            type="button"
-            onClick={() => onShowSettings()}
-            className="inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary hover:text-claude-text dark:hover:text-claude-darkText hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors"
-            aria-label={i18nService.t('settings')}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M14 17H5" /><path d="M19 7h-9" /><circle cx="17" cy="17" r="3" /><circle cx="7" cy="7" r="3" /></svg>
-            {i18nService.t('settings')}
-          </button>
+        <div className="hidden">
+          <LoginButton />
         </div>
       )}
       {/* Batch Delete Confirmation Modal */}
@@ -417,14 +309,14 @@ const SidebarAgentList: React.FC<{
   };
 
   return (
-    <div className="px-1 pb-2">
+    <div className="px-1 pb-2 sticky top-0 bg-claude-bg z-10">
       <div className="space-y-0.5">
         {enabledAgents.map((agent) => (
           <div
             key={agent.id}
-            className={`group flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm cursor-pointer transition-colors ${
+            className={`group hover:bg-claude-accent/30 flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm cursor-pointer transition-colors ${
               currentAgentId === agent.id
-                ? 'bg-claude-accent/12 text-claude-accent ring-1 ring-claude-accent/15'
+                ? 'bg-claude-accent/60 text-background ring-1 ring-claude-accent/15'
                 : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover/90 dark:hover:bg-claude-darkSurfaceHover/80'
             }`}
             onClick={() => handleSwitch(agent.id)}
