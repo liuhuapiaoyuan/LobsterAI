@@ -35,14 +35,7 @@
         "id": "openclaw-weixin",
         "npm": "@tencent-weixin/openclaw-weixin",
         "version": "1.0.3"
-      },
-      {
-        "id": "moltbot-popo",
-        "npm": "moltbot-popo",
-        "version": "1.0.66",
-        "registry": "https://npm.nie.netease.com",
-        "optional": true
-      },
+      }, 
       {
         "id": "nim",
         "npm": "openclaw-nim",

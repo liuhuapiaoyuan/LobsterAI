@@ -143,8 +143,7 @@ OpenClaw uses plugin-style channel keys that differ from YuanAI's internal platf
 | `discord` | `discord` |
 | `dingtalk` or `dingtalk-connector` | `dingtalk` |
 | `qq` or `qqbot` | `qq` |
-| `wecom` | `wecom` |
-| `popo` or `moltbot-popo` | `popo` |
+| `wecom` | `wecom` | 
 | `wechat` or `openclaw-weixin` | `wechat` |
 | `nim` | `nim` |
 | `xiaomifeng` | `xiaomifeng` |

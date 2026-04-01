@@ -525,7 +525,6 @@ interface IMGatewayConfig {
   nim: NimConfig;
   'netease-bee': NeteaseBeeChanConfig;
   wecom: WecomConfig;
-  popo: PopoOpenClawConfig;
   weixin: WeixinOpenClawConfig;
   settings: IMSettings;
 }
@@ -678,25 +677,6 @@ interface WecomConfig {
   debug: boolean;
 }
 
-interface PopoOpenClawConfig {
-  enabled: boolean;
-  connectionMode: 'websocket' | 'webhook';
-  appKey: string;
-  appSecret: string;
-  token: string;
-  aesKey: string;
-  webhookBaseUrl: string;
-  webhookPath: string;
-  webhookPort: number;
-  dmPolicy: 'open' | 'pairing' | 'allowlist' | 'disabled';
-  allowFrom: string[];
-  groupPolicy: 'open' | 'allowlist' | 'disabled';
-  groupAllowFrom: string[];
-  textChunkLimit: number;
-  richTextChunkLimit: number;
-  debug: boolean;
-}
-
 interface WeixinOpenClawConfig {
   enabled: boolean;
   accountId: string;
@@ -721,7 +701,6 @@ interface IMGatewayStatus {
   nim: NimGatewayStatus;
   'netease-bee': NeteaseBeeChanGatewayStatus;
   wecom: WecomGatewayStatus;
-  popo: PopoGatewayStatus;
   weixin: WeixinGatewayStatus;
 }
 
@@ -825,14 +804,6 @@ interface WecomGatewayStatus {
   startedAt: number | null;
   lastError: string | null;
   botId: string | null;
-  lastInboundAt: number | null;
-  lastOutboundAt: number | null;
-}
-
-interface PopoGatewayStatus {
-  connected: boolean;
-  startedAt: number | null;
-  lastError: string | null;
   lastInboundAt: number | null;
   lastOutboundAt: number | null;
 }

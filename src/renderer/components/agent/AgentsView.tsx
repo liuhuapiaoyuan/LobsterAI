@@ -25,7 +25,6 @@ const AgentsView: React.FC<AgentsViewProps> = ({
   onToggleSidebar,
   onNewChat,
   onShowCowork,
-  onShowLobsterPond,
   updateBadge,
 }) => {
   const isMac = window.electron.platform === 'darwin';

@@ -196,10 +196,6 @@ const normalizeBaseUrl = (baseUrl: string): string => baseUrl.trim().replace(/\/
 const normalizeApiFormat = (value: unknown): 'anthropic' | 'openai' => (
   value === 'openai' ? 'openai' : 'anthropic'
 );
-const ABOUT_CONTACT_EMAIL = 'lobsterai.project@rd.netease.com';
-const ABOUT_USER_MANUAL_URL = 'https://lobsterai.youdao.com/#/docs/lobsterai_user_manual';
-const ABOUT_SERVICE_TERMS_URL = 'https://c.youdao.com/dict/hardware/lobsterai/lobsterai_service.html';
-
 // MiniMax Portal OAuth constants
 const MINIMAX_OAUTH_CLIENT_ID = '78257093-7e40-4613-99e0-527b14b39113';
 const MINIMAX_OAUTH_SCOPE = 'group_id profile model.completion';
@@ -234,40 +230,6 @@ async function generateMiniMaxPkce(): Promise<{ verifier: string; challenge: str
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
   return { verifier, challenge, state };
 }
-
-const copyTextFallback = (text: string): boolean => {
-  const textarea = document.createElement('textarea');
-  textarea.value = text;
-  textarea.setAttribute('readonly', '');
-  textarea.style.position = 'fixed';
-  textarea.style.opacity = '0';
-  textarea.style.pointerEvents = 'none';
-  document.body.appendChild(textarea);
-  textarea.focus();
-  textarea.select();
-  textarea.setSelectionRange(0, text.length);
-  const copied = document.execCommand('copy');
-  document.body.removeChild(textarea);
-  return copied;
-};
-
-const copyTextToClipboard = async (text: string): Promise<boolean> => {
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch (clipboardError) {
-      console.warn('Navigator clipboard write failed, trying fallback:', clipboardError);
-    }
-  }
-
-  try {
-    return copyTextFallback(text);
-  } catch (fallbackError) {
-    console.error('Fallback clipboard copy failed:', fallbackError);
-    return false;
-  }
-};
 
 const getFixedApiFormatForProvider = (provider: string): 'anthropic' | 'openai' | 'gemini' | null => {
   if (provider === 'openai' || provider === 'stepfun') {
@@ -452,7 +414,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice, onUpda
   // 创建引用来确保内容区域的滚动
   const contentRef = useRef<HTMLDivElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
-  const emailCopiedTimerRef = useRef<number | null>(null);
   const updateCheckTimerRef = useRef<number | null>(null);
   
   // 快捷键设置
@@ -473,7 +434,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice, onUpda
 
   // About tab
   const [appVersion, setAppVersion] = useState('');
-  const [emailCopied, setEmailCopied] = useState(false);
   const [isExportingLogs, setIsExportingLogs] = useState(false);
   const [testMode, setTestMode] = useState(false);
   const [logoClickCount, setLogoClickCount] = useState(0);
@@ -487,20 +447,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice, onUpda
   useEffect(() => {
     setShowApiKey(false);
   }, [activeProvider]);
-
-  const handleCopyContactEmail = useCallback(async () => {
-    const copied = await copyTextToClipboard(ABOUT_CONTACT_EMAIL);
-    if (copied) {
-      setEmailCopied(true);
-      if (emailCopiedTimerRef.current != null) {
-        window.clearTimeout(emailCopiedTimerRef.current);
-      }
-      emailCopiedTimerRef.current = window.setTimeout(() => {
-        setEmailCopied(false);
-        emailCopiedTimerRef.current = null;
-      }, 1200);
-    }
-  }, []);
 
   const handleCheckUpdate = useCallback(async () => {
     if (updateCheckStatus === 'checking' || !appVersion) return;
@@ -531,14 +477,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice, onUpda
       }, 3000);
     }
   }, [appVersion, updateCheckStatus, onUpdateFound]);
-
-  const handleOpenUserManual = useCallback(() => {
-    void window.electron.shell.openExternal(ABOUT_USER_MANUAL_URL);
-  }, []);
-
-  const handleOpenServiceTerms = useCallback(() => {
-    void window.electron.shell.openExternal(ABOUT_SERVICE_TERMS_URL);
-  }, []);
 
   const handleExportLogs = useCallback(async () => {
     if (isExportingLogs) {
@@ -604,9 +542,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose, initialTab, notice, onUpda
   ]);
 
   useEffect(() => () => {
-    if (emailCopiedTimerRef.current != null) {
-      window.clearTimeout(emailCopiedTimerRef.current);
-    }
     if (updateCheckTimerRef.current != null) {
       window.clearTimeout(updateCheckTimerRef.current);
     }

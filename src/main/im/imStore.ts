@@ -15,7 +15,6 @@ import {
   NimConfig,
   NeteaseBeeChanConfig,
   WecomOpenClawConfig,
-  PopoOpenClawConfig,
   WeixinOpenClawConfig,
   IMSettings,
   Platform,
@@ -28,7 +27,6 @@ import {
   DEFAULT_NIM_CONFIG,
   DEFAULT_NETEASE_BEE_CONFIG,
   DEFAULT_WECOM_CONFIG,
-  DEFAULT_POPO_CONFIG,
   DEFAULT_WEIXIN_CONFIG,
   DEFAULT_IM_SETTINGS,
 } from './types';
@@ -298,28 +296,6 @@ export class IMStore {
       }
     }
 
-    // Migrate popo configs that have token but no connectionMode:
-    // These are existing webhook users from before connectionMode was introduced.
-    // Preserve their setup by explicitly setting connectionMode to 'webhook'.
-    const popoResult = this.db.exec('SELECT value FROM im_config WHERE key = ?', ['popo']);
-    if (popoResult[0]?.values[0]) {
-      try {
-        const popoConfig = JSON.parse(popoResult[0].values[0][0] as string) as Partial<PopoOpenClawConfig>;
-        if (popoConfig.token && !popoConfig.connectionMode) {
-          popoConfig.connectionMode = 'webhook';
-          const now = Date.now();
-          this.db.run(
-            'UPDATE im_config SET value = ?, updated_at = ? WHERE key = ?',
-            [JSON.stringify(popoConfig), now, 'popo']
-          );
-          changed = true;
-          console.log('[IMStore] Migrated popo config: inferred connectionMode=webhook from existing token');
-        }
-      } catch {
-        // Ignore parse errors
-      }
-    }
-
     // Migrate 'xiaomifeng' config key to 'netease-bee'
     const oldXmfResult = this.db.exec('SELECT value FROM im_config WHERE key = ?', ['xiaomifeng']);
     const newBeeResult = this.db.exec('SELECT value FROM im_config WHERE key = ?', ['netease-bee']);
@@ -379,7 +355,6 @@ export class IMStore {
     const neteaseBeeChan = this.getConfigValue<NeteaseBeeChanConfig>('netease-bee') ?? DEFAULT_NETEASE_BEE_CONFIG;
     const qq = this.getConfigValue<QQConfig>('qq') ?? DEFAULT_QQ_CONFIG;
     const wecom = this.getConfigValue<WecomOpenClawConfig>('wecomOpenClaw') ?? DEFAULT_WECOM_CONFIG;
-    const popo = this.getConfigValue<PopoOpenClawConfig>('popo') ?? DEFAULT_POPO_CONFIG;
     const weixin = this.getConfigValue<WeixinOpenClawConfig>('weixin') ?? DEFAULT_WEIXIN_CONFIG;
     const settings = this.getConfigValue<IMSettings>('settings') ?? DEFAULT_IM_SETTINGS;
 
@@ -403,7 +378,6 @@ export class IMStore {
       'netease-bee': resolveEnabled(neteaseBeeChan, DEFAULT_NETEASE_BEE_CONFIG),
       qq: resolveEnabled(qq, DEFAULT_QQ_CONFIG),
       wecom: resolveEnabled(wecom, DEFAULT_WECOM_CONFIG),
-      popo: resolveEnabled(popo, DEFAULT_POPO_CONFIG),
       weixin: resolveEnabled(weixin, DEFAULT_WEIXIN_CONFIG),
       settings: { ...DEFAULT_IM_SETTINGS, ...settings },
     };
@@ -433,9 +407,6 @@ export class IMStore {
     }
     if (config.wecom) {
       this.setWecomConfig(config.wecom);
-    }
-    if (config.popo) {
-      this.setPopoConfig(config.popo);
     }
     if (config.weixin) {
       this.setWeixinConfig(config.weixin);
@@ -539,18 +510,6 @@ export class IMStore {
   setWecomConfig(config: Partial<WecomOpenClawConfig>): void {
     const current = this.getWecomConfig();
     this.setConfigValue('wecomOpenClaw', { ...current, ...config });
-  }
-
-  // ==================== POPO ====================
-
-  getPopoConfig(): PopoOpenClawConfig {
-    const stored = this.getConfigValue<PopoOpenClawConfig>('popo');
-    return { ...DEFAULT_POPO_CONFIG, ...stored };
-  }
-
-  setPopoConfig(config: Partial<PopoOpenClawConfig>): void {
-    const current = this.getPopoConfig();
-    this.setConfigValue('popo', { ...current, ...config });
   }
 
   // ==================== Weixin (微信) ====================

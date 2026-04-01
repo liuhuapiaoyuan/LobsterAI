@@ -94,15 +94,7 @@ const DEFINITIONS = [
     logo: 'netease-bee.png',
     guideUrl: '',
   },
-  {
-    id: 'popo',
-    label: 'POPO',
-    region: 'china',
-    channel: 'moltbot-popo',
-    channelAliases: ['popo'],
-    logo: 'popo.png',
-    guideUrl: '',
-  },
+ 
   // ── Global ──
   {
     id: 'telegram',

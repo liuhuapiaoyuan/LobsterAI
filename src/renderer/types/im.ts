@@ -251,35 +251,6 @@ export interface WecomGatewayStatus {
   lastOutboundAt: number | null;
 }
 
-// ==================== POPO Types ====================
-
-export interface PopoOpenClawConfig {
-  enabled: boolean;
-  connectionMode: 'websocket' | 'webhook';
-  appKey: string;
-  appSecret: string;
-  token: string;
-  aesKey: string;
-  webhookBaseUrl: string;
-  webhookPath: string;
-  webhookPort: number;
-  dmPolicy: 'open' | 'pairing' | 'allowlist' | 'disabled';
-  allowFrom: string[];
-  groupPolicy: 'open' | 'allowlist' | 'disabled';
-  groupAllowFrom: string[];
-  textChunkLimit: number;
-  richTextChunkLimit: number;
-  debug: boolean;
-}
-
-export interface PopoGatewayStatus {
-  connected: boolean;
-  startedAt: number | null;
-  lastError: string | null;
-  lastInboundAt: number | null;
-  lastOutboundAt: number | null;
-}
-
 // ==================== Weixin (微信) Types ====================
 
 export interface WeixinOpenClawConfig {
@@ -311,7 +282,6 @@ export interface IMGatewayConfig {
   nim: NimConfig;
   'netease-bee': NeteaseBeeChanConfig;
   wecom: WecomOpenClawConfig;
-  popo: PopoOpenClawConfig;
   weixin: WeixinOpenClawConfig;
   settings: IMSettings;
 }
@@ -332,7 +302,6 @@ export interface IMGatewayStatus {
   nim: NimGatewayStatus;
   'netease-bee': NeteaseBeeChanGatewayStatus;
   wecom: WecomGatewayStatus;
-  popo: PopoGatewayStatus;
   weixin: WeixinGatewayStatus;
 }
 
@@ -549,25 +518,6 @@ export const DEFAULT_WECOM_CONFIG: WecomOpenClawConfig = {
   debug: true,
 };
 
-export const DEFAULT_POPO_CONFIG: PopoOpenClawConfig = {
-  enabled: false,
-  connectionMode: 'websocket',
-  appKey: '',
-  appSecret: '',
-  token: '',
-  aesKey: '',
-  webhookBaseUrl: '',
-  webhookPath: '/popo/callback',
-  webhookPort: 3100,
-  dmPolicy: 'open',
-  allowFrom: [],
-  groupPolicy: 'open',
-  groupAllowFrom: [],
-  textChunkLimit: 3000,
-  richTextChunkLimit: 5000,
-  debug: true,
-};
-
 export const DEFAULT_WEIXIN_CONFIG: WeixinOpenClawConfig = {
   enabled: false,
   accountId: '',
@@ -592,7 +542,6 @@ export const DEFAULT_IM_CONFIG: IMGatewayConfig = {
   nim: DEFAULT_NIM_CONFIG,
   'netease-bee': DEFAULT_NETEASE_BEE_CONFIG,
   wecom: DEFAULT_WECOM_CONFIG,
-  popo: DEFAULT_POPO_CONFIG,
   weixin: DEFAULT_WEIXIN_CONFIG,
   settings: DEFAULT_IM_SETTINGS,
 };
@@ -658,13 +607,6 @@ export const DEFAULT_IM_STATUS: IMGatewayStatus = {
     startedAt: null,
     lastError: null,
     botId: null,
-    lastInboundAt: null,
-    lastOutboundAt: null,
-  },
-  popo: {
-    connected: false,
-    startedAt: null,
-    lastError: null,
     lastInboundAt: null,
     lastOutboundAt: null,
   },

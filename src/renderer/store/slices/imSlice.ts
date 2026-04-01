@@ -15,7 +15,6 @@ import type {
   NimConfig,
   NeteaseBeeChanConfig,
   WecomOpenClawConfig,
-  PopoOpenClawConfig,
   WeixinOpenClawConfig,
   IMSettings,
 } from '../../types/im';
@@ -72,9 +71,6 @@ const imSlice = createSlice({
     setWecomConfig: (state, action: PayloadAction<Partial<WecomOpenClawConfig>>) => {
       state.config.wecom = { ...state.config.wecom, ...action.payload };
     },
-    setPopoConfig: (state, action: PayloadAction<Partial<PopoOpenClawConfig>>) => {
-      state.config.popo = { ...state.config.popo, ...action.payload };
-    },
     setWeixinConfig: (state, action: PayloadAction<Partial<WeixinOpenClawConfig>>) => {
       state.config.weixin = { ...state.config.weixin, ...action.payload };
     },
@@ -106,7 +102,6 @@ export const {
   setNimConfig,
   setNeteaseBeeChanConfig,
   setWecomConfig,
-  setPopoConfig,
   setWeixinConfig,
   setIMSettings,
   setStatus,

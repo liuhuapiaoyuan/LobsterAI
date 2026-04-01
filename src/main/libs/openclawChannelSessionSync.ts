@@ -181,7 +181,6 @@ function getChannelTitlePrefix(platform: string): string {
     telegram: 'TG',
     discord: 'Discord',
     qq: 'QQ',
-    popo: 'POPO',
   };
   const label = i18nMap[platform] ?? staticMap[platform] ?? platform;
   return `[${label}]`;
