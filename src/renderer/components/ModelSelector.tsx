@@ -1,10 +1,19 @@
 import React from 'react';
+import { Menu } from '@headlessui/react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
 import { ChevronDownIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { setSelectedModel, isSameModelIdentity, getModelIdentityKey } from '../store/slices/modelSlice';
 import type { Model } from '../store/slices/modelSlice';
 import { i18nService } from '../services/i18n';
+import { cn } from '@/lib/utils';
+import {
+  claudePopoverPanelVariants,
+  claudeMenuItemRowVariants,
+  claudeMenuGroupHeaderClass,
+  claudeMenuDividerClass,
+  claudeModelMenuButtonVariants,
+} from './ui/claude-menu';
 
 interface ModelSelectorProps {
   dropdownDirection?: 'up' | 'down';
@@ -12,111 +21,98 @@ interface ModelSelectorProps {
 
 const ModelSelector: React.FC<ModelSelectorProps> = ({ dropdownDirection = 'down' }) => {
   const dispatch = useDispatch();
-  const [isOpen, setIsOpen] = React.useState(false);
-  const containerRef = React.useRef<HTMLDivElement>(null);
   const selectedModel = useSelector((state: RootState) => state.model.selectedModel);
   const availableModels = useSelector((state: RootState) => state.model.availableModels);
 
-  // 点击外部区域关闭下拉框
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
-
   const handleModelSelect = (model: Model) => {
     dispatch(setSelectedModel(model));
-    setIsOpen(false);
   };
 
-  // 如果没有可用模型，显示提示
   if (availableModels.length === 0) {
     return (
-      <div className="px-3 py-1.5 rounded-xl dark:bg-claude-darkSurface bg-claude-surface dark:text-claude-darkTextSecondary text-claude-textSecondary text-sm">
+      <div className="rounded-xl bg-claude-surface px-3 py-1.5 text-sm text-claude-textSecondary dark:bg-claude-darkSurface dark:text-claude-darkTextSecondary">
         {i18nService.t('modelSelectorNoModels')}
       </div>
     );
   }
 
-  const dropdownPositionClass = dropdownDirection === 'up'
-    ? 'bottom-full mb-1'
-    : 'top-full mt-1';
+  const dropdownPositionClass =
+    dropdownDirection === 'up' ? 'bottom-full mb-1' : 'top-full mt-1';
 
-  const serverModels = availableModels.filter(m => m.isServerModel);
-  const userModels = availableModels.filter(m => !m.isServerModel);
+  const serverModels = availableModels.filter((m) => m.isServerModel);
+  const userModels = availableModels.filter((m) => !m.isServerModel);
   const hasBothGroups = serverModels.length > 0 && userModels.length > 0;
 
-  const renderModelItem = (model: Model) => (
-    <button
-      key={getModelIdentityKey(model)}
-      onClick={() => handleModelSelect(model)}
-      className={`w-full px-4 py-2.5 text-left dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover flex items-center justify-between transition-colors ${
-        isSameModelIdentity(model, selectedModel) ? 'dark:bg-claude-darkSurfaceHover/50 bg-claude-surfaceHover/50' : ''
-      }`}
-    >
-      <div className="flex flex-col">
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm">{model.name}</span>
-          {model.supportsImage && (
-            <span className="text-[10px] leading-none px-1.5 py-0.5 rounded-md bg-claude-accent/10 text-claude-accent whitespace-nowrap">
-              {i18nService.t('imageInput')}
-            </span>
-          )}
-        </div>
-        {model.provider && (
-          <span className="text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary">{model.provider}</span>
-        )}
-      </div>
-      {isSameModelIdentity(model, selectedModel) && (
-        <CheckIcon className="h-4 w-4 text-claude-accent" />
-      )}
-    </button>
-  );
-
   const renderGroupHeader = (label: string) => (
-    <div className="px-4 py-1.5 text-xs font-medium dark:text-claude-darkTextSecondary text-claude-textSecondary uppercase tracking-wider">
+    <div className={claudeMenuGroupHeaderClass} role="presentation">
       {label}
     </div>
   );
 
-  return (
-    <div ref={containerRef} className="relative cursor-pointer">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center space-x-2 px-3 py-1.5 rounded-xl dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover dark:text-claude-darkText text-claude-text transition-colors cursor-pointer ${isOpen ? 'dark:bg-claude-darkSurfaceHover bg-claude-surfaceHover' : ''}`}
+  const renderModelItem = (model: Model) => {
+    const selected = isSameModelIdentity(model, selectedModel);
+    return (
+      <Menu.Item
+        key={getModelIdentityKey(model)}
+        as="button"
+        type="button"
+        onClick={() => handleModelSelect(model)}
+        className={({ active }) =>
+          cn(
+            claudeMenuItemRowVariants({ active }),
+            selected && !active && 'bg-claude-surfaceHover/50 dark:bg-claude-darkSurfaceHover/50',
+          )
+        }
       >
-        <span className="font-medium text-sm">{selectedModel.name}</span>
-        <ChevronDownIcon className="h-4 w-4 dark:text-claude-darkTextSecondary text-claude-textSecondary" />
-      </button>
-
-      {isOpen && (
-        <div className={`absolute ${dropdownPositionClass} w-60 dark:bg-claude-darkSurface bg-claude-surface rounded-xl popover-enter shadow-popover z-50 dark:border-claude-darkBorder border-claude-border border overflow-hidden`}>
-          <div className="max-h-64 overflow-y-auto">
-            {hasBothGroups ? (
-              <>
-                {renderGroupHeader(i18nService.t('modelGroupServer'))}
-                {serverModels.map(renderModelItem)}
-                <div className="my-1 border-t dark:border-claude-darkBorder border-claude-border" />
-                {renderGroupHeader(i18nService.t('modelGroupUser'))}
-                {userModels.map(renderModelItem)}
-              </>
-            ) : (
-              availableModels.map(renderModelItem)
+        <div className="min-w-0 flex-1 text-left">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm">{model.name}</span>
+            {model.supportsImage && (
+              <span className="whitespace-nowrap rounded-md bg-claude-accent/10 px-1.5 py-0.5 text-[10px] leading-none text-claude-accent">
+                {i18nService.t('imageInput')}
+              </span>
             )}
           </div>
+          {model.provider && (
+            <span className="text-xs text-claude-textSecondary dark:text-claude-darkTextSecondary">
+              {model.provider}
+            </span>
+          )}
         </div>
-      )}
-    </div>
+        {selected && <CheckIcon className="h-4 w-4 flex-shrink-0 text-claude-accent" />}
+      </Menu.Item>
+    );
+  };
+
+  return (
+    <Menu as="div" className="relative">
+      <Menu.Button
+        className={({ open }) => cn(claudeModelMenuButtonVariants({ open }))}
+      >
+        <span className="text-sm font-medium">{selectedModel.name}</span>
+        <ChevronDownIcon className="h-4 w-4 text-claude-textSecondary dark:text-claude-darkTextSecondary" />
+      </Menu.Button>
+
+      <Menu.Items
+        className={cn(
+          'absolute left-0 max-h-64 overflow-y-auto popover-enter',
+          dropdownPositionClass,
+          claudePopoverPanelVariants({ width: 'md' }),
+        )}
+      >
+        {hasBothGroups ? (
+          <>
+            {renderGroupHeader(i18nService.t('modelGroupServer'))}
+            {serverModels.map(renderModelItem)}
+            <div className={claudeMenuDividerClass} role="presentation" />
+            {renderGroupHeader(i18nService.t('modelGroupUser'))}
+            {userModels.map(renderModelItem)}
+          </>
+        ) : (
+          availableModels.map(renderModelItem)
+        )}
+      </Menu.Items>
+    </Menu>
   );
 };
 

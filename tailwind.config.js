@@ -7,7 +7,45 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      borderRadius: {
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
+      },
       colors: {
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
+        },
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
+        },
         // Cold modern color palette
         claude: {
           // Light mode colors
@@ -37,14 +75,6 @@ export default {
           accentLight: '#FBBF24',
           accentMuted: 'rgba(243,146,0,0.12)',
         },
-        primary: {
-          DEFAULT: '#F39200',
-          dark: '#C67100'
-        },
-        secondary: {
-          DEFAULT: '#6B7280',
-          dark: '#2A2E38'
-        },
         success: {
           DEFAULT: '#22C55E',
           muted: 'rgba(34,197,94,0.12)',
@@ -57,6 +87,9 @@ export default {
           DEFAULT: '#EF4444',
           muted: 'rgba(239,68,68,0.12)',
         },
+      },
+      ringOffsetColor: {
+        background: 'hsl(var(--background))',
       },
       boxShadow: {
         subtle: '0 1px 2px rgba(0,0,0,0.05)',

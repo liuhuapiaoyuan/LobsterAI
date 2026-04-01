@@ -170,7 +170,7 @@ const PondInstalledPresetCard: React.FC<{
           : 'bg-gradient-to-r from-claude-border via-claude-border/40 to-transparent dark:from-claude-darkBorder dark:via-claude-darkBorder/50'
       }`}
     />
-    <div className="flex flex-1 flex-col p-4 pt-3">
+    <div className="flex  flex-1 flex-col p-4 pt-3">
       <div className="flex gap-3">
         <div
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl shadow-inner transition-transform group-hover:scale-[1.03] ${
@@ -200,7 +200,7 @@ const PondInstalledPresetCard: React.FC<{
           )}
         </div>
       </div>
-      <div className="mt-auto pt-4 flex flex-col gap-2">
+      <div className="mt-auto pt-4 flex  gap-1">
         <button
           type="button"
           onClick={onChat}

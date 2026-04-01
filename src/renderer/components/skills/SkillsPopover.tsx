@@ -8,6 +8,8 @@ import { i18nService } from '../../services/i18n';
 import { skillService } from '../../services/skill';
 import { RootState } from '../../store';
 import { Skill } from '../../types/skill';
+import { claudePopoverPanelVariants, claudePopoverSearchInputClass } from '../ui/claude-menu';
+import { cn } from '@/lib/utils';
 
 interface SkillsPopoverProps {
   isOpen: boolean;
@@ -106,10 +108,13 @@ const SkillsPopover: React.FC<SkillsPopoverProps> = ({
   return (
     <div
       ref={popoverRef}
-      className="absolute bottom-full left-0 mb-2 w-72 rounded-xl border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-claude-surface shadow-xl z-[99999]"
+      className={cn(
+        'absolute bottom-full left-0 mb-2',
+        claudePopoverPanelVariants({ width: 'lg' }),
+      )}
     >
       {/* Search input */}
-      <div className="p-3 border-b dark:border-claude-darkBorder border-claude-border">
+      <div className="p-3  dark:border-claude-darkBorder border-claude-border">
         <div className="relative">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 dark:text-claude-darkTextSecondary text-claude-textSecondary" />
           <input
@@ -118,7 +123,10 @@ const SkillsPopover: React.FC<SkillsPopoverProps> = ({
             placeholder={i18nService.t('searchSkills')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg dark:bg-claude-darkSurface bg-claude-surface dark:text-claude-darkText text-claude-text dark:placeholder-claude-darkTextSecondary placeholder-claude-textSecondary border dark:border-claude-darkBorder border-claude-border focus:outline-none focus:ring-2 focus:ring-claude-accent"
+            className={cn(
+              claudePopoverSearchInputClass,
+              'pl-9',
+            )}
           />
         </div>
       </div>
@@ -135,12 +143,14 @@ const SkillsPopover: React.FC<SkillsPopoverProps> = ({
             return (
               <button
                 key={skill.id}
+                type="button"
                 onClick={() => handleSelectSkill(skill)}
-                className={`w-full flex items-start gap-3 px-3 py-2.5 text-left transition-colors ${
+                className={cn(
+                  'w-full flex items-start gap-3 px-3 py-2.5 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-claude-accent/30',
                   isActive
-                    ? 'dark:bg-claude-accent/10 bg-claude-accent/10'
-                    : 'dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover'
-                }`}
+                    ? 'bg-claude-accent/10 dark:bg-claude-accent/10'
+                    : 'hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover',
+                )}
               >
                 <div className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
                   isActive
@@ -181,8 +191,9 @@ const SkillsPopover: React.FC<SkillsPopoverProps> = ({
       {/* Footer - Manage Skills */}
       <div className="border-t dark:border-claude-darkBorder border-claude-border">
         <button
+          type="button"
           onClick={handleManageSkills}
-          className="w-full flex items-center justify-between px-4 py-3 text-sm dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover transition-colors rounded-b-xl"
+          className="w-full flex items-center justify-between rounded-b-xl px-4 py-3 text-sm text-claude-text transition-colors hover:bg-claude-surfaceHover focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-claude-accent/30 dark:text-claude-darkText dark:hover:bg-claude-darkSurfaceHover"
         >
           <span>{i18nService.t('manageSkills')}</span>
           <Cog6ToothIcon className="h-4 w-4 dark:text-claude-darkTextSecondary text-claude-textSecondary" />

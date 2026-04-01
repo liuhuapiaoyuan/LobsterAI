@@ -16,6 +16,7 @@ import ComposeIcon from '../icons/ComposeIcon';
 import { ShieldCheckIcon } from '@heroicons/react/24/outline';
 import WindowTitleBar from '../window/WindowTitleBar';
 import { QuickActionBar, PromptPanel } from '../quick-actions';
+import RuixenMoonChat from '../ui/ruixen-moon-chat';
 import type { SettingsOpenOptions } from '../Settings';
 import type { CoworkSession, CoworkImageAttachment, OpenClawEngineStatus } from '../../types/cowork';
 
@@ -556,76 +557,70 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
     );
   }
 
-  // Home view - no current session
-  return (
-    <div className="flex-1 flex flex-col dark:bg-claude-darkBg bg-claude-bg h-full">
-      {/* Engine status banner for error states */}
-      {engineStatusBanner}
+  // Home view - no current session (Ruixen moon shell + real Cowork input)
+  const moonSubtitle = (
+    <p className="relative mx-auto mt-2 max-w-md text-xl font-bold text-slate-700">
+      <span className="sr-only">{coworkDescriptionText}</span>
+      <span className="invisible block whitespace-pre-wrap select-none pointer-events-none" aria-hidden>
+        {coworkDescriptionText}
+      </span>
+      <span className="absolute inset-0 flex justify-center" aria-hidden>
+        <span className="text-center whitespace-pre-wrap">
+          {coworkDescriptionChars.slice(0, coworkDescriptionTypedLen).join('')}
+          {coworkDescriptionTypedLen < coworkDescriptionChars.length && (
+            <span
+              className="ml-0.5 inline-block h-[1em] w-px animate-pulse bg-current align-[-0.15em] opacity-80"
+              aria-hidden
+            />
+          )}
+        </span>
+      </span>
+    </p>
+  );
 
-      {/* Header */}
+  return (
+    <div className="flex h-full min-h-0 flex-1 flex-col dark:bg-claude-darkBg bg-claude-bg">
+      {engineStatusBanner}
       {homeHeader}
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="max-w-3xl mx-auto px-4 py-16 space-y-12">
-          {/* Welcome Section */}
-          <div className="text-center space-y-5">
-            <img src="lobster-yuan.png" alt="logo" className="w-16 h-16 mx-auto" />
-            <h2 className="text-xl tracking-tight dark:text-claude-darkText text-claude-text">
-              {i18nService.t('coworkWelcome')}
-            </h2>
-            <p className="relative  font-bold text-3xl dark:text-claude-darkTextSecondary text-claude max-w-md mx-auto">
-              <span className="sr-only">{coworkDescriptionText}</span>
-              <span className="invisible block whitespace-pre-wrap select-none pointer-events-none" aria-hidden>
-                {coworkDescriptionText}
-              </span>
-              <span className="absolute inset-0 flex justify-center" aria-hidden>
-                <span className="text-center whitespace-pre-wrap">
-                  {coworkDescriptionChars.slice(0, coworkDescriptionTypedLen).join('')}
-                  {coworkDescriptionTypedLen < coworkDescriptionChars.length && (
-                    <span
-                      className="inline-block w-px h-[1em] align-[-0.15em] ml-0.5 bg-current opacity-80 animate-pulse"
-                      aria-hidden
-                    />
-                  )}
-                </span>
-              </span>
-            </p>
-          </div>
-
-          {/* Prompt Input Area - Large version with folder selector */}
-          <div className="space-y-3">
-            <div className="shadow-glow-accent rounded-2xl">
-              <CoworkPromptInput
-                ref={promptInputRef}
-                onSubmit={handleStartSession}
-                onStop={handleStopSession}
-                isStreaming={isStreaming}
-                disabled={!isEngineReady}
-                placeholder={i18nService.t('coworkPlaceholder')}
-                size="large"
-                workingDirectory={config.workingDirectory}
-                onWorkingDirectoryChange={async (dir: string) => {
-                  await coworkService.updateConfig({ workingDirectory: dir });
-                }}
-                showFolderSelector={true}
-                onManageSkills={() => onShowSkills?.()}
-              />
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="space-y-4">
-            {selectedAction ? (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <RuixenMoonChat
+          title={
+            <>
+              <img src="lobster-yuan.png" alt="" className="h-16 w-16" />
+              <span className="text-3xl tracking-tight sm:text-4xl">{i18nService.t('coworkWelcome')}</span>
+            </>
+          }
+          subtitle={moonSubtitle}
+          inputSlot={
+            <CoworkPromptInput
+              ref={promptInputRef}
+              onSubmit={handleStartSession}
+              onStop={handleStopSession}
+              isStreaming={isStreaming}
+              disabled={!isEngineReady}
+              placeholder={i18nService.t('coworkPlaceholder')}
+              size="large"
+              embedVariant="glass"
+              workingDirectory={config.workingDirectory}
+              onWorkingDirectoryChange={async (dir: string) => {
+                await coworkService.updateConfig({ workingDirectory: dir });
+              }}
+              showFolderSelector={true}
+              onManageSkills={() => onShowSkills?.()}
+            />
+          }
+          quickActionsSlot={
+            selectedAction ? (
               <PromptPanel
                 action={selectedAction}
                 onPromptSelect={handleQuickActionPromptSelect}
               />
             ) : (
-              <QuickActionBar actions={quickActions} onActionSelect={handleActionSelect} />
-            )}
-          </div>
-        </div>
+              <QuickActionBar actions={quickActions} onActionSelect={handleActionSelect} variant="moon" />
+            )
+          }
+        />
       </div>
     </div>
   );

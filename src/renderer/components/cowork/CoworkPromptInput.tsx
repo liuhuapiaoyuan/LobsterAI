@@ -15,6 +15,11 @@ import { setSkills, toggleActiveSkill } from '../../store/slices/skillSlice';
 import { Skill } from '../../types/skill';
 import { CoworkImageAttachment } from '../../types/cowork';
 import { getCompactFolderName } from '../../utils/path';
+import { cn } from '@/lib/utils';
+import {
+  claudePromptToolbarFolderButtonVariants,
+  claudePromptToolbarIconButtonVariants,
+} from '../ui/claude-menu';
 
 // CoworkAttachment is aliased from the Redux-persisted DraftAttachment type
 // so that attachment state survives view switches (cowork ↔ skills, etc.)
@@ -90,6 +95,8 @@ interface CoworkPromptInputProps {
   sessionId?: string;
   /** When true, hides attachment/skill buttons but keeps the input box visible (disabled) */
   remoteManaged?: boolean;
+  /** Transparent shell for Ruixen moon home (no rainbow border / card fill) */
+  embedVariant?: 'default' | 'glass';
 }
 
 const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInputProps>(
@@ -108,6 +115,7 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
       onManageSkills,
       sessionId,
       remoteManaged = false,
+      embedVariant = 'default',
     } = props;
     const dispatch = useDispatch();
     const draftKey = sessionId || '__home__';
@@ -307,20 +315,29 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
     }
   };
 
+  const isGlassEmbed = embedVariant === 'glass' && isLarge;
+  const toolbarEmbed = isGlassEmbed ? 'glass' : 'default';
+
   const containerClass = isLarge
-    ? 'relative bg-claude-surface shadow-[0_2px_16px_rgba(15,17,23,0.06)] transition-shadow duration-200 dark:bg-claude-darkSurface/90 dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)] focus-within:shadow-[0_4px_28px_rgba(243,146,0,0.14)] dark:focus-within:shadow-[0_4px_32px_rgba(243,146,0,0.12)] focus-within:ring-2 focus-within:ring-claude-accent/25'
+    ? isGlassEmbed
+      ? 'relative bg-transparent shadow-none transition-shadow duration-200 dark:bg-transparent dark:shadow-none focus-within:shadow-none focus-within:ring-0'
+      : 'relative bg-claude-surface shadow-[0_2px_16px_rgba(15,17,23,0.06)] transition-shadow duration-200 dark:bg-claude-darkSurface/90 dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)] focus-within:shadow-[0_4px_28px_rgba(243,146,0,0.14)] dark:focus-within:shadow-[0_4px_32px_rgba(243,146,0,0.12)] focus-within:ring-2 focus-within:ring-claude-accent/25'
     : 'relative flex items-end gap-2 p-3 dark:bg-claude-darkSurface bg-claude-surface';
 
-  const rainbowBorderWrapperClass = [
-    'relative p-[2px] ',
-    isLarge ? 'rounded-2xl' : 'rounded-xl',
-    isStreaming ? 'animate-border-flow-fast' : 'animate-border-flow',
-    'bg-[length:200%_100%]',
-    '[background-image:linear-gradient(90deg,#ec4899_0%,#f97316_16%,#eab308_33%,#22c55e_50%,#06b6d4_66%,#8b5cf6_83%,#ec4899_100%)]',
-  ].join(' ');
+  const rainbowBorderWrapperClass = isGlassEmbed
+    ? 'relative rounded-xl'
+    : [
+      'relative p-[2px] ',
+      isLarge ? 'rounded-2xl' : 'rounded-xl',
+      isStreaming ? 'animate-border-flow-fast' : 'animate-border-flow',
+      'bg-[length:200%_100%]',
+      '[background-image:linear-gradient(90deg,#ec4899_0%,#f97316_16%,#eab308_33%,#22c55e_50%,#06b6d4_66%,#8b5cf6_83%,#ec4899_100%)]',
+    ].join(' ');
 
   const textareaClass = isLarge
-    ? `w-full resize-none bg-transparent px-4 pt-2.5 pb-2 dark:text-claude-darkText text-claude-text placeholder:dark:text-claude-darkTextSecondary/60 placeholder:text-claude-textSecondary/60 focus:outline-none text-[15px] leading-6 min-h-[${minHeight}px] max-h-[${maxHeight}px]`
+    ? isGlassEmbed
+      ? `w-full resize-none bg-transparent px-4 pt-2.5 pb-2 text-claude-text placeholder:text-claude-textSecondary/60 focus:outline-none text-[15px] leading-6 min-h-[${minHeight}px] max-h-[${maxHeight}px]`
+      : `w-full resize-none bg-transparent px-4 pt-2.5 pb-2 dark:text-claude-darkText text-claude-text placeholder:dark:text-claude-darkTextSecondary/60 placeholder:text-claude-textSecondary/60 focus:outline-none text-[15px] leading-6 min-h-[${minHeight}px] max-h-[${maxHeight}px]`
     : 'flex-1 resize-none bg-transparent dark:text-claude-darkText text-claude-text placeholder:dark:text-claude-darkTextSecondary placeholder:text-claude-textSecondary focus:outline-none text-sm leading-relaxed min-h-[24px] max-h-[200px]';
 
   const truncatePath = (path: string, maxLength = 30): string => {
@@ -595,7 +612,7 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
     ? `${rainbowBorderWrapperClass} ring-2 ring-claude-accent/50`
     : rainbowBorderWrapperClass;
 
-  const innerRadiusClass = isLarge ? 'rounded-[14px]' : 'rounded-[10px]';
+  const innerRadiusClass = isLarge ? (isGlassEmbed ? 'rounded-xl' : 'rounded-[14px]') : 'rounded-[10px]';
 
   const enhancedContainerClass = `${containerClass} ${innerRadiusClass}`;
 
@@ -606,7 +623,11 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
           {attachments.map((attachment) => (
               <div
                 key={attachment.path}
-                className="inline-flex items-center gap-1.5 rounded-full  dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-claude-surface px-2.5 py-1 text-xs dark:text-claude-darkText text-claude-text max-w-full"
+                className={
+                  isGlassEmbed
+                    ? 'inline-flex max-w-full items-center gap-1.5 rounded-full border border-claude-border bg-claude-surface px-2.5 py-1 text-xs text-claude-text'
+                    : 'inline-flex items-center gap-1.5 rounded-full  dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-claude-surface px-2.5 py-1 text-xs dark:text-claude-darkText text-claude-text max-w-full'
+                }
                 title={attachment.path}
               >
                 {attachment.isImage ? (
@@ -618,7 +639,11 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
                 <button
                   type="button"
                   onClick={() => handleRemoveAttachment(attachment.path)}
-                  className="ml-0.5 rounded-full p-0.5 hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover"
+                  className={
+                    isGlassEmbed
+                      ? 'ml-0.5 rounded-full p-0.5 hover:bg-claude-surfaceHover'
+                      : 'ml-0.5 rounded-full p-0.5 hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover'
+                  }
                   aria-label={i18nService.t('coworkAttachmentRemove')}
                   title={i18nService.t('coworkAttachmentRemove')}
                 >
@@ -629,7 +654,13 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
         </div>
       )}
       {imageVisionHint && (
-        <div className="mb-2 flex items-start gap-1.5 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-400">
+        <div
+          className={
+            isGlassEmbed
+              ? 'mb-2 flex items-start gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-700'
+              : 'mb-2 flex items-start gap-1.5 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-400'
+          }
+        >
           <ExclamationTriangleIcon className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
           <span>
             {i18nService.getLanguage() === 'zh'
@@ -639,7 +670,11 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
           <button
             type="button"
             onClick={() => setImageVisionHint(false)}
-            className="ml-auto flex-shrink-0 rounded-full p-0.5 hover:bg-amber-200/50 dark:hover:bg-amber-800/50"
+            className={
+              isGlassEmbed
+                ? 'ml-auto flex-shrink-0 rounded-full p-0.5 hover:bg-amber-200/50'
+                : 'ml-auto flex-shrink-0 rounded-full p-0.5 hover:bg-amber-200/50 dark:hover:bg-amber-800/50'
+            }
           >
             <XMarkIcon className="h-3 w-3" />
           </button>
@@ -681,7 +716,10 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
                         ref={folderButtonRef as React.RefObject<HTMLButtonElement>}
                         type="button"
                         onClick={() => setShowFolderMenu(!showFolderMenu)}
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover dark:hover:text-claude-darkText hover:text-claude-text transition-colors"
+                        className={cn(
+                          claudePromptToolbarFolderButtonVariants({ embed: toolbarEmbed }),
+                          'focus:outline-none focus-visible:ring-2 focus-visible:ring-claude-accent/30',
+                        )}
                       >
                         <FolderIcon className="h-4 w-4" />
                         <span className="max-w-[150px] truncate text-xs">
@@ -690,7 +728,13 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
                       </button>
                       {/* Tooltip - hidden when folder menu is open */}
                       {!showFolderMenu && (
-                        <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3.5 py-2.5 text-[13px] leading-relaxed rounded-xl shadow-xl dark:bg-claude-darkBg bg-claude-bg dark:text-claude-darkText text-claude-text dark:border-claude-darkBorder border-claude-border border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50 max-w-[400px] break-all whitespace-nowrap">
+                        <div
+                          className={
+                            isGlassEmbed
+                              ? 'pointer-events-none invisible absolute bottom-full left-1/2 z-50 mb-2 max-w-[400px] -translate-x-1/2 whitespace-nowrap break-all rounded-xl border border-claude-border bg-claude-bg px-3.5 py-2.5 text-[13px] leading-relaxed text-claude-text opacity-0 shadow-xl transition-all duration-200 group-hover:visible group-hover:opacity-100'
+                              : 'absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3.5 py-2.5 text-[13px] leading-relaxed rounded-xl shadow-xl dark:bg-claude-darkBg bg-claude-bg dark:text-claude-darkText text-claude-text dark:border-claude-darkBorder border-claude-border border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50 max-w-[400px] break-all whitespace-nowrap'
+                          }
+                        >
                           {truncatePath(workingDirectory, 120)}
                         </div>
                       )}
@@ -708,7 +752,10 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
                   <button
                     type="button"
                     onClick={handleAddFile}
-                    className="flex items-center justify-center p-1.5 rounded-lg text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover dark:hover:text-claude-darkText hover:text-claude-text transition-colors"
+                    className={cn(
+                      claudePromptToolbarIconButtonVariants({ embed: toolbarEmbed }),
+                      'focus:outline-none focus-visible:ring-2 focus-visible:ring-claude-accent/30',
+                    )}
                     title={i18nService.t('coworkAddFile')}
                     aria-label={i18nService.t('coworkAddFile')}
                     disabled={disabled || isStreaming || isAddingFile}
@@ -721,6 +768,11 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
                     <SkillsButton
                       onSelectSkill={handleSelectSkill}
                       onManageSkills={handleManageSkills}
+                      className={
+                        isGlassEmbed
+                          ? '!bg-claude-surface dark:!bg-claude-surface !text-claude-textSecondary dark:!text-claude-textSecondary hover:!bg-claude-surfaceHover dark:hover:!bg-claude-surfaceHover'
+                          : ''
+                      }
                     />
                     <ActiveSkillBadge />
                   </>
@@ -769,7 +821,10 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
                 <button
                   type="button"
                   onClick={handleAddFile}
-                  className="flex-shrink-0 p-1.5 rounded-lg dark:text-claude-darkTextSecondary text-claude-textSecondary dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover dark:hover:text-claude-darkText hover:text-claude-text transition-colors"
+                  className={cn(
+                    claudePromptToolbarIconButtonVariants({ embed: 'default' }),
+                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-claude-accent/30',
+                  )}
                   title={i18nService.t('coworkAddFile')}
                   aria-label={i18nService.t('coworkAddFile')}
                   disabled={disabled || isStreaming || isAddingFile}
@@ -804,7 +859,7 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
         </div>
       </div>
       {showFolderRequiredWarning && (
-        <div className="mt-2 text-xs text-red-500 dark:text-red-400">
+        <div className={isGlassEmbed ? 'mt-2 text-xs text-red-600' : 'mt-2 text-xs text-red-500 dark:text-red-400'}>
           {i18nService.t('coworkSelectFolderFirst')}
         </div>
       )}

@@ -239,7 +239,7 @@ export const UninstalledPresetCard: React.FC<{
         type="button"
         onClick={onAdd}
         disabled={isAdding}
-        className="mt-4 w-full rounded-xl bg-gradient-to-r from-claude-accent to-claude-accentHover py-2.5 text-xs font-semibold text-white shadow-subtle transition hover:from-claude-accentHover hover:to-claude-accent disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-auto  rounded-xl bg-gradient-to-r from-claude-accent to-claude-accentHover py-2.5 text-xs font-semibold text-white shadow-subtle transition hover:from-claude-accentHover hover:to-claude-accent disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isAdding ? '...' : (i18nService.t('addAgent') || 'Add')}
       </button>

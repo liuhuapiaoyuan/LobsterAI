@@ -9,6 +9,8 @@ import AcademicCapIcon from '../icons/AcademicCapIcon';
 interface QuickActionBarProps {
   actions: LocalizedQuickAction[];
   onActionSelect: (actionId: string) => void;
+  /** Pill style for moon / glass cowork home */
+  variant?: 'default' | 'moon';
 }
 
 // 图标映射
@@ -20,13 +22,18 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   AcademicCapIcon,
 };
 
-const QuickActionBar: React.FC<QuickActionBarProps> = ({ actions, onActionSelect }) => {
+const QuickActionBar: React.FC<QuickActionBarProps> = ({ actions, onActionSelect, variant = 'default' }) => {
   if (actions.length === 0) {
     return null;
   }
 
+  const moonButton =
+    'flex items-center gap-2 rounded-full border border-slate-200/90 bg-white/90 px-4 py-2 text-xs font-medium text-slate-700 shadow-sm backdrop-blur-sm transition-colors hover:border-claude-accent/40 hover:bg-white hover:text-claude-text focus:outline-none focus-visible:ring-2 focus-visible:ring-claude-accent/35';
+  const defaultButton =
+    'flex items-center gap-2 rounded-full border border-claude-border bg-claude-surface px-4 py-2 text-sm font-medium text-claude-textSecondary shadow-subtle transition-all duration-200 ease-out hover:border-claude-accent/40 hover:bg-claude-surfaceHover hover:text-claude-text focus:outline-none focus-visible:ring-2 focus-visible:ring-claude-accent/30 dark:border-claude-darkBorder dark:bg-claude-darkSurface dark:text-claude-darkTextSecondary dark:hover:bg-claude-darkSurfaceHover dark:hover:text-claude-darkText';
+
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2.5">
+    <div className={variant === 'moon' ? 'flex flex-wrap items-center justify-center gap-3' : 'flex flex-wrap items-center justify-center gap-2.5'}>
       {actions.map((action) => {
         const IconComponent = iconMap[action.icon];
 
@@ -35,10 +42,16 @@ const QuickActionBar: React.FC<QuickActionBarProps> = ({ actions, onActionSelect
             key={action.id}
             type="button"
             onClick={() => onActionSelect(action.id)}
-            className="flex items-center gap-2 px-4 py-2 rounded-3xl border text-sm font-medium transition-all duration-200 ease-out dark:bg-claude-darkSurface bg-claude-surface dark:border-claude-darkBorder border-claude-border dark:text-claude-darkTextSecondary text-claude-textSecondary dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover hover:border-claude-accent/40"
+            className={variant === 'moon' ? moonButton : defaultButton}
           >
             {IconComponent && (
-              <IconComponent className="w-4 h-4 dark:text-claude-darkTextSecondary text-claude-textSecondary" />
+              <IconComponent
+                className={
+                  variant === 'moon'
+                    ? 'h-4 w-4 text-slate-500'
+                    : 'h-4 w-4 dark:text-claude-darkTextSecondary text-claude-textSecondary'
+                }
+              />
             )}
             <span>{action.label}</span>
           </button>
