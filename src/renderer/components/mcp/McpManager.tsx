@@ -1,9 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import SearchIcon from '../icons/SearchIcon';
-import TrashIcon from '../icons/TrashIcon';
-import PencilIcon from '../icons/PencilIcon';
-import ConnectorIcon from '../icons/ConnectorIcon';
 import { i18nService } from '../../services/i18n';
 import { mcpService } from '../../services/mcp';
 import { setMcpServers } from '../../store/slices/mcpSlice';
@@ -11,14 +8,8 @@ import { RootState } from '../../store';
 import { McpServerConfig, McpServerFormData, McpRegistryEntry, McpMarketplaceCategoryInfo } from '../../types/mcp';
 import { mcpRegistry, mcpCategories } from '../../data/mcpRegistry';
 import ErrorMessage from '../ErrorMessage';
-import Tooltip from '../ui/Tooltip';
 import McpServerFormModal from './McpServerFormModal';
-
-const TRANSPORT_BADGE_COLORS: Record<string, string> = {
-  stdio: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  sse: 'bg-green-500/10 text-green-600 dark:text-green-400',
-  http: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
-};
+import { McpMarketplaceEntryCard, McpServerInstanceCard } from './McpCards';
 
 type McpTab = 'installed' | 'marketplace' | 'custom';
 
@@ -106,6 +97,16 @@ const McpManager: React.FC = () => {
       && entry.transportType === server.transportType
       && entry.command === server.command
     ));
+  };
+
+  const getRegistryCategoryLabel = (entry: McpRegistryEntry): string | undefined => {
+    const cat = dynamicCategories.find(c => c.id === entry.category);
+    if (cat && cat.id !== 'all') {
+      const label = (currentLanguage === 'zh' ? cat.name_zh : cat.name_en)?.trim();
+      if (label) return label;
+      if (cat.key) return i18nService.t(cat.key);
+    }
+    return entry.categoryKey ? i18nService.t(entry.categoryKey) : undefined;
   };
 
   const getTransportSummary = (server: McpServerConfig): string => {
@@ -394,9 +395,9 @@ const McpManager: React.FC = () => {
       <div>
       {/* ── Tab: Installed ──────────────────────────────── */}
       {activeTab === 'installed' && (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {filteredInstalled.length === 0 ? (
-            <div className="col-span-2 text-center py-12 text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
+            <div className="col-span-full py-12 text-center text-sm text-claude-textSecondary dark:text-claude-darkTextSecondary">
               {i18nService.t('mcpNoInstalledServers')}
             </div>
           ) : (
@@ -404,88 +405,39 @@ const McpManager: React.FC = () => {
               const registryEntry = getRegistryEntryForServer(server);
               const installedDescription = getInstalledDescription(server);
               return (
-                <div
+                <McpServerInstanceCard
                   key={server.id}
-                  className="rounded-xl border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface/50 bg-claude-surface/50 p-3 transition-colors hover:border-claude-accent/50"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-7 h-7 rounded-lg dark:bg-claude-darkSurface bg-claude-surface flex items-center justify-center flex-shrink-0">
-                        <ConnectorIcon className="h-4 w-4 dark:text-claude-darkTextSecondary text-claude-textSecondary" />
-                      </div>
-                      <span className="text-sm font-medium dark:text-claude-darkText text-claude-text truncate">
-                        {server.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEditForm(server)}
-                        className="p-1 rounded-lg text-claude-textSecondary dark:text-claude-darkTextSecondary hover:text-claude-accent dark:hover:text-claude-accent transition-colors"
-                        title={i18nService.t('editMcpServer')}
-                      >
-                        <PencilIcon className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRequestDelete(server)}
-                        className="p-1 rounded-lg text-claude-textSecondary dark:text-claude-darkTextSecondary hover:text-red-500 dark:hover:text-red-400 transition-colors"
-                        title={i18nService.t('deleteMcpServer')}
-                      >
-                        <TrashIcon className="h-3.5 w-3.5" />
-                      </button>
-                      <div
-                        className={`w-9 h-5 rounded-full flex items-center transition-colors cursor-pointer flex-shrink-0 ${
-                          server.enabled ? 'bg-claude-accent' : 'dark:bg-claude-darkBorder bg-claude-border'
-                        }`}
-                        onClick={() => handleToggleEnabled(server.id)}
-                      >
-                        <div
-                          className={`w-3.5 h-3.5 rounded-full bg-white shadow-md transform transition-transform ${
-                            server.enabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
-                          }`}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <Tooltip
-                    content={installedDescription}
-                    position="bottom"
-                    maxWidth="360px"
-                    className="block w-full"
-                  >
-                    <p className="text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary line-clamp-2 mb-2">
-                      {installedDescription}
-                    </p>
-                  </Tooltip>
-
-                  <div className="flex items-center gap-2 text-[10px] dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                    <span className={`px-1.5 py-0.5 rounded font-medium ${TRANSPORT_BADGE_COLORS[server.transportType] || ''}`}>
-                      {server.transportType}
-                    </span>
-                    {server.transportType === 'stdio' && server.command && (
-                      <>
-                        <span>·</span>
-                        <span className="truncate">{getStdioCommandSummary(server.command, server.args)}</span>
-                      </>
-                    )}
-                    {(server.transportType === 'sse' || server.transportType === 'http') && server.url && (
-                      <>
-                        <span>·</span>
-                        <span className="truncate">{server.url}</span>
-                      </>
-                    )}
-                    {registryEntry?.requiredEnvKeys && registryEntry.requiredEnvKeys.length > 0 && (
-                      <>
-                        <span>·</span>
-                        <span className="text-amber-500 dark:text-amber-400">
-                          {registryEntry.requiredEnvKeys.length} key{registryEntry.requiredEnvKeys.length > 1 ? 's' : ''}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
+                  server={server}
+                  description={installedDescription}
+                  tooltipContent={installedDescription}
+                  footerDetail={
+                    <>
+                      {server.transportType === 'stdio' && server.command && (
+                        <>
+                          <span className="opacity-40">·</span>
+                          <span className="min-w-0 truncate">{getStdioCommandSummary(server.command, server.args)}</span>
+                        </>
+                      )}
+                      {(server.transportType === 'sse' || server.transportType === 'http') && server.url && (
+                        <>
+                          <span className="opacity-40">·</span>
+                          <span className="min-w-0 truncate">{server.url}</span>
+                        </>
+                      )}
+                      {registryEntry?.requiredEnvKeys && registryEntry.requiredEnvKeys.length > 0 && (
+                        <>
+                          <span className="opacity-40">·</span>
+                          <span className="shrink-0 text-amber-600 dark:text-amber-400">
+                            {registryEntry.requiredEnvKeys.length} key{registryEntry.requiredEnvKeys.length > 1 ? 's' : ''}
+                          </span>
+                        </>
+                      )}
+                    </>
+                  }
+                  onEdit={() => handleOpenEditForm(server)}
+                  onDelete={() => handleRequestDelete(server)}
+                  onToggle={() => handleToggleEnabled(server.id)}
+                />
               );
             })
           )}
@@ -513,63 +465,35 @@ const McpManager: React.FC = () => {
             ))}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {filteredMarketplace.length === 0 ? (
-              <div className="col-span-2 text-center py-12 text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
+              <div className="col-span-full py-12 text-center text-sm text-claude-textSecondary dark:text-claude-darkTextSecondary">
                 {i18nService.t('noMcpServersAvailable')}
               </div>
             ) : (
               filteredMarketplace.map((entry) => (
-                <div
+                <McpMarketplaceEntryCard
                   key={entry.id}
-                  className="rounded-xl border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface/50 bg-claude-surface/50 p-3 transition-colors hover:border-claude-accent/50"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-7 h-7 rounded-lg dark:bg-claude-darkSurface bg-claude-surface flex items-center justify-center flex-shrink-0">
-                        <ConnectorIcon className="h-4 w-4 dark:text-claude-darkTextSecondary text-claude-textSecondary" />
-                      </div>
-                      <span className="text-sm font-medium dark:text-claude-darkText text-claude-text truncate">
-                        {entry.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      {installedRegistryIds.has(entry.id) ? (
-                        <span className="px-2.5 py-1 text-xs rounded-lg bg-claude-surface dark:bg-claude-darkSurface text-claude-textSecondary dark:text-claude-darkTextSecondary">
-                          {i18nService.t('mcpInstalled')}
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleInstallFromRegistry(entry)}
-                          className="px-2.5 py-1 text-xs rounded-lg bg-claude-accent text-white hover:bg-claude-accent/90 transition-colors"
-                        >
-                          {i18nService.t('mcpInstall')}
-                        </button>
+                  entry={entry}
+                  description={getRegistryEntryDescription(entry)}
+                  isInstalled={installedRegistryIds.has(entry.id)}
+                  categoryLabel={getRegistryCategoryLabel(entry)}
+                  footerDetail={
+                    <>
+                      <span className="opacity-40">·</span>
+                      <span className="min-w-0 truncate">{getStdioCommandSummary(entry.command, entry.defaultArgs)}</span>
+                      {entry.requiredEnvKeys && entry.requiredEnvKeys.length > 0 && (
+                        <>
+                          <span className="opacity-40">·</span>
+                          <span className="shrink-0 text-amber-600 dark:text-amber-400">
+                            {entry.requiredEnvKeys.length} key{entry.requiredEnvKeys.length > 1 ? 's' : ''}
+                          </span>
+                        </>
                       )}
-                    </div>
-                  </div>
-
-                  <p className="text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary line-clamp-2 mb-2">
-                    {getRegistryEntryDescription(entry)}
-                  </p>
-
-                  <div className="flex items-center gap-2 text-[10px] dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                    <span className={`px-1.5 py-0.5 rounded font-medium ${TRANSPORT_BADGE_COLORS[entry.transportType] || ''}`}>
-                      {entry.transportType}
-                    </span>
-                    <span>·</span>
-                    <span className="truncate">{getStdioCommandSummary(entry.command, entry.defaultArgs)}</span>
-                    {entry.requiredEnvKeys && entry.requiredEnvKeys.length > 0 && (
-                      <>
-                        <span>·</span>
-                        <span className="text-amber-500 dark:text-amber-400">
-                          {entry.requiredEnvKeys.length} key{entry.requiredEnvKeys.length > 1 ? 's' : ''}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
+                    </>
+                  }
+                  onInstall={() => handleInstallFromRegistry(entry)}
+                />
               ))
             )}
           </div>
@@ -580,91 +504,47 @@ const McpManager: React.FC = () => {
       {activeTab === 'custom' && (
         <div className="space-y-6">
           {/* Custom servers grid (add button + server cards) */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Add custom server card */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <button
               type="button"
               onClick={handleOpenCreateForm}
-              className="rounded-xl border-2 border-dashed dark:border-claude-darkBorder border-claude-border dark:text-claude-darkTextSecondary text-claude-textSecondary hover:border-claude-accent hover:text-claude-accent dark:hover:border-claude-accent dark:hover:text-claude-accent transition-colors flex items-center justify-center min-h-[120px] text-sm"
+              className="group relative flex min-h-[168px] flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-black/[0.08] bg-gradient-to-b from-transparent to-claude-surface/40 text-sm font-medium text-claude-textSecondary transition-all duration-300 hover:border-claude-accent/45 hover:bg-gradient-to-b hover:from-claude-accent/[0.06] hover:to-claude-surface/50 hover:text-claude-accent dark:border-white/[0.12] dark:to-claude-darkSurface/30 dark:text-claude-darkTextSecondary dark:hover:text-claude-accent"
             >
-              + {i18nService.t('addMcpServer')}
+              <span className="inline-flex items-center gap-2">
+                <span className="text-lg leading-none opacity-80 group-hover:opacity-100">+</span>
+                {i18nService.t('addMcpServer')}
+              </span>
             </button>
-            {filteredCustom.map((server) => (
-                <div
+            {filteredCustom.map((server) => {
+              const desc = server.description || getTransportSummary(server);
+              return (
+                <McpServerInstanceCard
                   key={server.id}
-                  className="rounded-xl border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface/50 bg-claude-surface/50 p-3 transition-colors hover:border-claude-accent/50"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-7 h-7 rounded-lg dark:bg-claude-darkSurface bg-claude-surface flex items-center justify-center flex-shrink-0">
-                        <ConnectorIcon className="h-4 w-4 dark:text-claude-darkTextSecondary text-claude-textSecondary" />
-                      </div>
-                      <span className="text-sm font-medium dark:text-claude-darkText text-claude-text truncate">
-                        {server.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEditForm(server)}
-                        className="p-1 rounded-lg text-claude-textSecondary dark:text-claude-darkTextSecondary hover:text-claude-accent dark:hover:text-claude-accent transition-colors"
-                        title={i18nService.t('editMcpServer')}
-                      >
-                        <PencilIcon className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRequestDelete(server)}
-                        className="p-1 rounded-lg text-claude-textSecondary dark:text-claude-darkTextSecondary hover:text-red-500 dark:hover:text-red-400 transition-colors"
-                        title={i18nService.t('deleteMcpServer')}
-                      >
-                        <TrashIcon className="h-3.5 w-3.5" />
-                      </button>
-                      <div
-                        className={`w-9 h-5 rounded-full flex items-center transition-colors cursor-pointer flex-shrink-0 ${
-                          server.enabled ? 'bg-claude-accent' : 'dark:bg-claude-darkBorder bg-claude-border'
-                        }`}
-                        onClick={() => handleToggleEnabled(server.id)}
-                      >
-                        <div
-                          className={`w-3.5 h-3.5 rounded-full bg-white shadow-md transform transition-transform ${
-                            server.enabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
-                          }`}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <Tooltip
-                    content={server.description || getTransportSummary(server)}
-                    position="bottom"
-                    maxWidth="360px"
-                    className="block w-full"
-                  >
-                    <p className="text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary line-clamp-2 mb-2">
-                      {server.description || getTransportSummary(server)}
-                    </p>
-                  </Tooltip>
-
-                  <div className="flex items-center gap-2 text-[10px] dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                    <span className={`px-1.5 py-0.5 rounded font-medium ${TRANSPORT_BADGE_COLORS[server.transportType] || ''}`}>
-                      {server.transportType}
-                    </span>
-                    {server.transportType === 'stdio' && server.command && (
-                      <>
-                        <span>·</span>
-                        <span className="truncate">{server.command}</span>
-                      </>
-                    )}
-                    {(server.transportType === 'sse' || server.transportType === 'http') && server.url && (
-                      <>
-                        <span>·</span>
-                        <span className="truncate">{server.url}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
+                  server={server}
+                  description={desc}
+                  tooltipContent={desc}
+                  footerDetail={
+                    <>
+                      {server.transportType === 'stdio' && server.command && (
+                        <>
+                          <span className="opacity-40">·</span>
+                          <span className="min-w-0 truncate">{server.command}</span>
+                        </>
+                      )}
+                      {(server.transportType === 'sse' || server.transportType === 'http') && server.url && (
+                        <>
+                          <span className="opacity-40">·</span>
+                          <span className="min-w-0 truncate">{server.url}</span>
+                        </>
+                      )}
+                    </>
+                  }
+                  onEdit={() => handleOpenEditForm(server)}
+                  onDelete={() => handleRequestDelete(server)}
+                  onToggle={() => handleToggleEnabled(server.id)}
+                />
+              );
+            })}
           </div>
         </div>
       )}

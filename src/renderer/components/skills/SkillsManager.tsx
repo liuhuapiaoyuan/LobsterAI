@@ -21,6 +21,7 @@ import { RootState } from '../../store';
 import { Skill, MarketplaceSkill, MarketTag } from '../../types/skill';
 import ErrorMessage from '../ErrorMessage';
 import SkillSecurityReport from './SkillSecurityReport';
+import { InstalledSkillCard, MarketplaceSkillCard } from './SkillCards';
 
 type SkillTab = 'installed' | 'marketplace';
 
@@ -568,97 +569,36 @@ const SkillsManager: React.FC = () => {
 
       {activeTab === 'installed' && (
       <>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {filteredSkills.length === 0 ? (
-          <div className="col-span-2 text-center py-8 text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
+          <div className="col-span-full text-center py-12 text-sm dark:text-claude-darkTextSecondary text-claude-textSecondary">
             {i18nService.t('noSkillsAvailable')}
           </div>
         ) : (
-          filteredSkills.map((skill) => (
-            <div
-              key={skill.id}
-              className="rounded-xl border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface/50 bg-claude-surface/50 p-3 transition-colors hover:border-claude-accent/50 cursor-pointer"
-              onClick={() => setSelectedSkill(skill)}
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-7 h-7 rounded-lg dark:bg-claude-darkSurface bg-claude-surface flex items-center justify-center flex-shrink-0">
-                    <PuzzleIcon className="h-4 w-4 dark:text-claude-darkTextSecondary text-claude-textSecondary" />
-                  </div>
-                  <span className="text-sm font-medium dark:text-claude-darkText text-claude-text truncate">
-                    {skill.name}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {!skill.isBuiltIn && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); handleRequestDeleteSkill(skill); }}
-                      className="p-1 rounded-lg text-claude-textSecondary dark:text-claude-darkTextSecondary hover:text-red-500 dark:hover:text-red-400 transition-colors"
-                      title={i18nService.t('deleteSkill')}
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
-                  )}
-                  <div
-                    className={`w-9 h-5 rounded-full flex items-center transition-colors cursor-pointer flex-shrink-0 ${
-                      skill.enabled ? 'bg-claude-accent' : 'dark:bg-claude-darkBorder bg-claude-border'
-                    }`}
-                    onClick={(e) => { e.stopPropagation(); handleToggleSkill(skill.id); }}
-                  >
-                    <div
-                      className={`w-3.5 h-3.5 rounded-full bg-white shadow-md transform transition-transform ${
-                        skill.enabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
-                      }`}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <p className="text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary line-clamp-2 mb-2">
-                {skillService.getLocalizedSkillDescription(skill.id, skill.name, skill.description)}
-              </p>
-
-              <div className="flex items-center justify-between text-[10px] dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                <div className="flex items-center gap-2">
-                {skill.isOfficial && (
-                  <>
-                    <span className="px-1.5 py-0.5 rounded bg-claude-accent/10 text-claude-accent font-medium">
-                      {i18nService.t('official')}
-                    </span>
-                    <span>·</span>
-                  </>
-                )}
-                {skill.version && (
-                  <>
-                    <span className="px-1.5 py-0.5 rounded dark:bg-claude-darkSurfaceHover bg-claude-surfaceHover font-medium">
-                      v{skill.version}
-                    </span>
-                    <span>·</span>
-                  </>
-                )}
-                <span>{formatSkillDate(skill.updatedAt)}</span>
-                </div>
-                {(() => {
-                  const mp = marketplaceSkills.find(m => m.id === skill.id);
-                  if (mp && !skill.isBuiltIn && skill.version && mp.version && compareVersions(mp.version, skill.version) > 0) {
-                    return (
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); handleUpgradeSkill(mp); }}
-                        disabled={upgradeState?.isActive === true}
-                        className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <ArrowPathIcon className="h-3.5 w-3.5" />
-                        {i18nService.t('skillUpgrade')}
-                      </button>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-            </div>
-          ))
+          filteredSkills.map((skill) => {
+            const mp = marketplaceSkills.find(m => m.id === skill.id);
+            const showUpgrade = !!(
+              mp &&
+              !skill.isBuiltIn &&
+              skill.version &&
+              mp.version &&
+              compareVersions(mp.version, skill.version) > 0
+            );
+            return (
+              <InstalledSkillCard
+                key={skill.id}
+                skill={skill}
+                description={skillService.getLocalizedSkillDescription(skill.id, skill.name, skill.description)}
+                formattedDate={formatSkillDate(skill.updatedAt)}
+                showUpgrade={showUpgrade}
+                onOpen={() => setSelectedSkill(skill)}
+                onDelete={() => handleRequestDeleteSkill(skill)}
+                onToggle={() => handleToggleSkill(skill.id)}
+                onUpgrade={() => mp && handleUpgradeSkill(mp)}
+                disableUpgrade={upgradeState?.isActive === true}
+              />
+            );
+          })
         )}
       </div>
       </>
@@ -705,96 +645,36 @@ const SkillsManager: React.FC = () => {
                 {i18nService.t('skillMarketplaceEmpty')}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {filteredMarketplaceSkills.map((skill) => (
-              <div
-                key={skill.id}
-                className="rounded-xl border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface/50 bg-claude-surface/50 p-3 transition-colors hover:border-claude-accent/50 cursor-pointer"
-                onClick={() => setSelectedMarketplaceSkill(skill)}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-7 h-7 rounded-lg dark:bg-claude-darkSurface bg-claude-surface flex items-center justify-center flex-shrink-0">
-                      <PuzzleIcon className="h-4 w-4 dark:text-claude-darkTextSecondary text-claude-textSecondary" />
-                    </div>
-                    <span className="text-sm font-medium dark:text-claude-darkText text-claude-text truncate">
-                      {skill.name}
-                    </span>
-                  </div>
-                  <div className="flex-shrink-0">
-                    {(() => {
-                      const status = getSkillInstallStatus(skill);
-                      if (status === 'update_available') {
-                        return (
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); handleUpgradeSkill(skill); }}
-                            disabled={upgradeState?.isActive === true}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <ArrowPathIcon className="h-3.5 w-3.5" />
-                            {i18nService.t('skillUpgrade')}
-                          </button>
-                        );
-                      }
-                      if (status === 'installed') {
-                        return (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-lg text-green-600 dark:text-green-400 bg-green-500/10">
-                            <CheckCircleIcon className="h-3.5 w-3.5" />
-                            {i18nService.t('skillAlreadyInstalled')}
-                          </span>
-                        );
-                      }
-                      return (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); handleInstallMarketplaceSkill(skill); }}
-                          disabled={installingSkillId !== null}
-                          className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-lg bg-claude-accent text-white hover:bg-claude-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <ArrowDownTrayIcon className="h-3.5 w-3.5" />
-                          {installingSkillId === skill.id ? i18nService.t('skillInstalling') : i18nService.t('skillInstall')}
-                        </button>
-                      );
-                    })()}
-                  </div>
-                </div>
-
-                <p className="text-xs dark:text-claude-darkTextSecondary text-claude-textSecondary line-clamp-2 mb-2">
-                  {resolveLocalizedText(skill.description)}
-                </p>
-
-                <div className="flex items-center gap-2 text-[10px] dark:text-claude-darkTextSecondary text-claude-textSecondary">
-                  {skill.source?.from && (
-                    <>
-                      <span className="px-1.5 py-0.5 rounded dark:bg-claude-darkSurfaceHover bg-claude-surfaceHover font-medium">
-                        {skill.source.from}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {filteredMarketplaceSkills.map((skill) => {
+                  const status = getSkillInstallStatus(skill);
+                  const installedVer = getInstalledVersion(skill.id);
+                  const versionLine =
+                    skill.version &&
+                    (installedVer && compareVersions(skill.version, installedVer) > 0 ? (
+                      <span className="rounded-md bg-amber-500/15 px-2 py-0.5 text-amber-800 dark:text-amber-200 tabular-nums font-semibold">
+                        v{installedVer} → v{skill.version}
                       </span>
-                      <span>·</span>
-                    </>
-                  )}
-                  {skill.version && (
-                    <>
-                      {(() => {
-                        const installedVer = getInstalledVersion(skill.id);
-                        if (installedVer && compareVersions(skill.version, installedVer) > 0) {
-                          return (
-                            <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium">
-                              v{installedVer} → v{skill.version}
-                            </span>
-                          );
-                        }
-                        return (
-                          <span className="px-1.5 py-0.5 rounded dark:bg-claude-darkSurfaceHover bg-claude-surfaceHover font-medium">
-                            v{skill.version}
-                          </span>
-                        );
-                      })()}
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
+                    ) : (
+                      <span className="rounded-md bg-black/[0.04] px-2 py-0.5 dark:bg-white/[0.06] tabular-nums">
+                        v{skill.version}
+                      </span>
+                    ));
+                  return (
+                    <MarketplaceSkillCard
+                      key={skill.id}
+                      skill={skill}
+                      description={resolveLocalizedText(skill.description)}
+                      installStatus={status}
+                      onOpen={() => setSelectedMarketplaceSkill(skill)}
+                      onInstall={() => handleInstallMarketplaceSkill(skill)}
+                      onUpgrade={() => handleUpgradeSkill(skill)}
+                      installingSkillId={installingSkillId}
+                      disableUpgrade={upgradeState?.isActive === true}
+                      versionLine={versionLine}
+                    />
+                  );
+                })}
           </div>
             )}
           </>

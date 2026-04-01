@@ -428,7 +428,7 @@ const App: React.FC = () => {
     <AppUpdateBadge latestVersion={updateInfo.latestVersion} onClick={handleOpenUpdateModal} />
   ) : null;
   const windowsStandaloneTitleBar = isWindows ? (
-    <div className="draggable relative h-9 shrink-0 dark:bg-claude-darkSurfaceMuted bg-claude-surfaceMuted">
+    <div className="draggable relative h-9  shrink-0 dark:bg-claude-darkSurfaceMuted bg-claude-surfaceMuted">
       <WindowTitleBar isOverlayActive={isOverlayActive} />
     </div>
   ) : null;

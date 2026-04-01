@@ -16,7 +16,7 @@ const SkillsView: React.FC<SkillsViewProps> = ({ isSidebarCollapsed, onToggleSid
   const isMac = window.electron.platform === 'darwin';
   return (
     <div className="flex-1 flex flex-col dark:bg-claude-darkBg bg-claude-bg h-full">
-      <div className="draggable flex h-12 items-center justify-between px-4 border-b dark:border-claude-darkBorder border-claude-border shrink-0">
+      <div className="draggable flex h-12 items-center justify-between px-4   shrink-0">
         <div className="flex items-center space-x-3 h-8">
           {isSidebarCollapsed && (
             <div className={`non-draggable flex items-center gap-1 ${isMac ? 'pl-[68px]' : ''}`}>
@@ -45,7 +45,7 @@ const SkillsView: React.FC<SkillsViewProps> = ({ isSidebarCollapsed, onToggleSid
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0 [scrollbar-gutter:stable]">
-        <div className="max-w-3xl mx-auto px-4 py-6">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
           <SkillsManager />
         </div>
       </div>

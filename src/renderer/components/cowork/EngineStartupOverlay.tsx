@@ -56,8 +56,8 @@ const EngineStartupOverlay: React.FC = () => {
     : null;
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center dark:bg-claude-darkBg/90 bg-claude-bg/90 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-2xl border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface bg-claude-surface p-6 shadow-card">
+    <div className="absolute inset-0 z-50 flex items-center justify-center dark:bg-claude-darkBg/90  backdrop-blur-sm">
+      <div className="w-full max-w-lg   dark:border-claude-darkBorder  dark:bg-claude-darkSurface  p-6 shadow-card">
         <div className="flex flex-col items-center text-center gap-3">
           <div className="h-10 w-10 rounded-full bg-claude-accent/15 text-claude-accent flex items-center justify-center animate-pulse">
             <ChatBubbleLeftRightIcon className="h-5 w-5" />
