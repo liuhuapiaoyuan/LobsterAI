@@ -9,7 +9,7 @@ import { decryptSecret, encryptWithPassword, decryptWithPassword, EncryptedPaylo
 import { coworkService } from '../../services/cowork';
 import { APP_ID, EXPORT_FORMAT_TYPE, EXPORT_PASSWORD } from '../../constants/app';
 import ErrorMessage from '../ErrorMessage';
-import { XMarkIcon, Cog6ToothIcon, SignalIcon, CheckCircleIcon, XCircleIcon, CubeIcon, PuzzlePieceIcon, CpuChipIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, Cog6ToothIcon,   CheckCircleIcon, XCircleIcon, CubeIcon, PuzzlePieceIcon, CpuChipIcon, InformationCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { EyeIcon, EyeSlashIcon, XCircleIcon as XCircleIconSolid } from '@heroicons/react/20/solid';
 import PlusCircleIcon from '../icons/PlusCircleIcon';
 import TrashIcon from '../icons/TrashIcon';
@@ -49,6 +49,7 @@ import SettingsCard from './shared/SettingsCard';
 import SettingsToggleRow from './shared/SettingsToggleRow';
 import IntegrationsPanel from './panels/IntegrationsPanel';
 import AboutPanel from './panels/AboutPanel';
+import { cn } from '@/lib/utils';
 
 export type { SettingsOpenOptions } from './settingsTypes';
 
@@ -2516,7 +2517,7 @@ const SettingsModal: React.FC<SettingsProps> = ({ onClose, initialTab, initialCo
         return (
           <div className="flex h-full">
             {/* Provider List - Left Side */}
-            <div className="w-2/5 border-r dark:border-claude-darkBorder border-claude-border pr-3 space-y-1.5 overflow-y-auto">
+            <div className="w-2/5  dark:border-claude-darkBorder border-claude-border pr-3 space-y-1.5 overflow-y-auto">
               <div className="flex items-center justify-between mb-2 px-1">
                 <h3 className="text-sm font-medium dark:text-claude-darkText text-claude-text">
                   {i18nService.t('modelProviders')}
@@ -2606,7 +2607,7 @@ const SettingsModal: React.FC<SettingsProps> = ({ onClose, initialTab, initialCo
 
             {/* Provider Settings - Right Side */}
             <div className="w-3/5 pl-4 pr-2 space-y-4 overflow-y-auto [scrollbar-gutter:stable]">
-              <div className="flex items-center justify-between pb-2 border-b dark:border-claude-darkBorder border-claude-border">
+              <div className="flex items-center justify-between pb-2  dark:border-claude-darkBorder border-claude-border">
                 <h3 className="text-base font-medium dark:text-claude-darkText text-claude-text">
                   {(providerMeta[activeProvider]?.label ?? activeProvider.charAt(0).toUpperCase() + activeProvider.slice(1))} {i18nService.t('providerSettings')}
                 </h3>
@@ -3125,7 +3126,9 @@ const SettingsModal: React.FC<SettingsProps> = ({ onClose, initialTab, initialCo
                   disabled={isTesting || (providerRequiresApiKey(activeProvider) && !providers[activeProvider].apiKey)}
                   className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-xl border dark:border-claude-darkBorder border-claude-border dark:text-claude-darkText text-claude-text dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:scale-[0.98]"
                 >
-                  <SignalIcon className="h-3.5 w-3.5 mr-1.5" />
+                  {/* <SignalIcon className="h-3.5 w-3.5 mr-1.5" /> */}
+                  <ArrowPathIcon className={cn("h-3.5 w-3.5 mr-1.5", isTesting ? 'text-claude-accent animate-spin' : 'dark:text-claude-darkTextSecondary text-claude-textSecondary')} />
+
                   {isTesting ? i18nService.t('testing') : i18nService.t('testConnection')}
                 </button>
               </div>
@@ -3232,7 +3235,7 @@ const SettingsModal: React.FC<SettingsProps> = ({ onClose, initialTab, initialCo
 
   return (
     <div
-      className="fixed inset-0 z-50 modal-backdrop flex items-center justify-center"
+      className="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div

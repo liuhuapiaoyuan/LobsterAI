@@ -10,6 +10,7 @@ import SearchIcon from './icons/SearchIcon';
 import SidebarToggleIcon from './icons/SidebarToggleIcon';
 import TrashIcon from './icons/TrashIcon';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { SettingsIcon } from 'lucide-react';
 
 interface SidebarProps {
   onShowSettings: () => void;
@@ -119,7 +120,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`shrink-0 dark:bg-claude-darkSurfaceMuted bg-claude-bg flex flex-col sidebar-transition overflow-hidden ${
+      className={`shrink-0 dark:bg-claude-darkSurfaceMuted bg-claude-bg flex flex-col sidebar-transition relative z-[60] overflow-hidden ${
         isCollapsed ? 'w-0' : 'w-60'
       }`}
     >
@@ -150,12 +151,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               className="h-8 w-8 inline-flex items-center justify-center rounded-lg dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover dark:hover:bg-claude-darkSurfaceHover transition-colors"
               aria-label={i18nService.t('settings')}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
-                <path d="M14 17H5" />
-                <path d="M19 7h-9" />
-                <circle cx="17" cy="17" r="3" />
-                <circle cx="7" cy="7" r="3" />
-              </svg>
+            <SettingsIcon className="h-4 w-4" />
             </button>
             <button
               type="button"
