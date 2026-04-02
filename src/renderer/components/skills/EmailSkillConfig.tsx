@@ -337,12 +337,9 @@ const EmailSkillConfig: React.FC<EmailSkillConfigProps> = ({ onClose }) => {
   }
 
   return (
-    <div className="space-y-4 p-4 rounded-xl border dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface/30 bg-claude-surface/30">
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium dark:text-claude-darkText text-claude-text">
-          {i18nService.t('emailConfig')}
-        </h4>
-        {onClose && (
+    <div className="space-y-4 p-4  rounded-xl  dark:border-claude-darkBorder border-claude-border dark:bg-claude-darkSurface/30 bg-claude-surface/30">
+      {onClose && (
+        <div className="flex  items-center justify-between">
           <button
             type="button"
             onClick={onClose}
@@ -350,15 +347,18 @@ const EmailSkillConfig: React.FC<EmailSkillConfigProps> = ({ onClose }) => {
           >
             {i18nService.t('collapse')}
           </button>
-        )}
-      </div>
-      <div className="min-h-[18px]">
-        {(persistError || (isPersisting && showPersisting)) && (
+        </div>
+      )}
+      {(persistError || (isPersisting && showPersisting)) && (
+        <div className="min-h-[18px]">
+
           <div className={`text-xs ${persistError ? 'text-red-600 dark:text-red-400' : 'text-claude-textSecondary dark:text-claude-darkTextSecondary'}`}>
             {persistError || `${i18nService.t('saving')}...`}
           </div>
-        )}
-      </div>
+
+        </div>
+
+      )}
 
       {/* Provider Selection */}
       <div>

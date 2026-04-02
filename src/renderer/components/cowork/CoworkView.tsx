@@ -173,7 +173,7 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
         const apiConfig = await coworkService.checkApiConfig();
         if (apiConfig && !apiConfig.hasConfig) {
           onRequestAppSettings?.({
-            initialTab: 'model',
+            initialTab: 'models',
             notice: buildApiConfigNotice(apiConfig.error),
           });
         }
@@ -224,7 +224,7 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
         const apiConfig = await coworkService.checkApiConfig();
         if (apiConfig && !apiConfig.hasConfig) {
           onRequestAppSettings?.({
-            initialTab: 'model',
+            initialTab: 'models',
             notice: buildApiConfigNotice(apiConfig.error),
           });
           isStartingRef.current = false;

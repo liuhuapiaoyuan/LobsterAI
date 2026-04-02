@@ -1009,7 +1009,7 @@ const IMSettings: React.FC = () => {
   return (
     <div className="flex h-full gap-4">
       {/* Platform List - Left Side */}
-      <div className="w-48 flex-shrink-0 border-r dark:border-claude-darkBorder border-claude-border pr-3 space-y-2 overflow-y-auto">
+      <div className="w-48 flex-shrink-0  dark:border-claude-darkBorder border-claude-border pr-3 space-y-2 overflow-y-auto">
         {platforms.map((platform) => {
                 const logo = PlatformRegistry.logo(platform);
            const isEnabled = isPlatformEnabled(platform);
@@ -1068,7 +1068,7 @@ const IMSettings: React.FC = () => {
       {/* Platform Settings - Right Side */}
       <div className="flex-1 min-w-0 pl-4 pr-2 space-y-4 overflow-y-auto [scrollbar-gutter:stable]">
         {/* Header with status */}
-        <div className="flex items-center gap-3 pb-3 border-b dark:border-claude-darkBorder/60 border-claude-border/60">
+        <div className="flex items-center gap-3 pb-3 dark:border-claude-darkBorder/60 border-claude-border/60">
           <div className="flex items-center gap-2">
              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white dark:bg-claude-darkBorder/30 p-1">
                <img
