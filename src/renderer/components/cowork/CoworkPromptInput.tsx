@@ -329,7 +329,7 @@ const CoworkPromptInput = React.forwardRef<CoworkPromptInputRef, CoworkPromptInp
     : [
       'relative p-[2px] ',
       isLarge ? 'rounded-2xl' : 'rounded-xl',
-      isStreaming ? 'animate-border-flow-fast' : 'animate-border-flow',
+      isStreaming ? 'animate-border-flow-fast' : 'animate-border-flow ',
       'bg-[length:200%_100%]',
       '[background-image:linear-gradient(90deg,#ec4899_0%,#f97316_16%,#eab308_33%,#22c55e_50%,#06b6d4_66%,#8b5cf6_83%,#ec4899_100%)]',
     ].join(' ');

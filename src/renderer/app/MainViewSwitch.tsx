@@ -42,6 +42,7 @@ const MainViewSwitch: React.FC<MainViewSwitchProps> = ({
         isSidebarCollapsed={isSidebarCollapsed}
         onToggleSidebar={onToggleSidebar}
         onNewChat={onNewChat}
+        onShowCowork={onShowCowork}
         updateBadge={updateBadgeWhenCollapsed}
       />
     ) : mainView === 'scheduledTasks' ? (
@@ -49,6 +50,7 @@ const MainViewSwitch: React.FC<MainViewSwitchProps> = ({
         isSidebarCollapsed={isSidebarCollapsed}
         onToggleSidebar={onToggleSidebar}
         onNewChat={onNewChat}
+        onShowCowork={onShowCowork}
         updateBadge={updateBadgeWhenCollapsed}
       />
     ) : mainView === 'mcp' ? (
@@ -56,6 +58,7 @@ const MainViewSwitch: React.FC<MainViewSwitchProps> = ({
         isSidebarCollapsed={isSidebarCollapsed}
         onToggleSidebar={onToggleSidebar}
         onNewChat={onNewChat}
+        onShowCowork={onShowCowork}
         updateBadge={updateBadgeWhenCollapsed}
       />
     ) : mainView === 'lobsterPond' ? (
@@ -83,6 +86,7 @@ const MainViewSwitch: React.FC<MainViewSwitchProps> = ({
         isSidebarCollapsed={isSidebarCollapsed}
         onToggleSidebar={onToggleSidebar}
         onNewChat={onNewChat}
+        onShowCowork={onShowCowork}
         updateBadge={updateBadgeWhenCollapsed}
       />
     )}

@@ -9,13 +9,14 @@ import AgentSettingsPanel from './AgentSettingsPanel';
 import SidebarToggleIcon from '../icons/SidebarToggleIcon';
 import ComposeIcon from '../icons/ComposeIcon';
 import WindowTitleBar from '../window/WindowTitleBar';
+import AgentQuickSwitchBar from '../AgentQuickSwitchBar';
 import { UninstalledPresetCard } from './AgentsView';
 
 interface LobsterPondViewProps {
   isSidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
   onNewChat?: () => void;
-  onShowCowork?: () => void;
+  onShowCowork: () => void;
   onShowAgents?: () => void;
   updateBadge?: React.ReactNode;
 }
@@ -58,7 +59,7 @@ const LobsterPondView: React.FC<LobsterPondViewProps> = ({
   const handleSwitchAgent = (agentId: string) => {
     agentService.switchAgent(agentId);
     coworkService.loadSessions(agentId);
-    onShowCowork?.();
+    onShowCowork();
   };
 
   return (
@@ -88,7 +89,10 @@ const LobsterPondView: React.FC<LobsterPondViewProps> = ({
             {i18nService.t('lobsterPond')}
           </h1>
         </div>
-        <WindowTitleBar inline />
+        <div className="non-draggable flex min-w-0 items-center gap-2 shrink-0">
+          <AgentQuickSwitchBar onShowCowork={onShowCowork} />
+          <WindowTitleBar inline />
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0 [scrollbar-gutter:stable]">

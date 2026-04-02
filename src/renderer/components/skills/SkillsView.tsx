@@ -4,15 +4,17 @@ import SkillsManager from './SkillsManager';
 import SidebarToggleIcon from '../icons/SidebarToggleIcon';
 import ComposeIcon from '../icons/ComposeIcon';
 import WindowTitleBar from '../window/WindowTitleBar';
+import AgentQuickSwitchBar from '../AgentQuickSwitchBar';
 
 interface SkillsViewProps {
   isSidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
   onNewChat?: () => void;
+  onShowCowork: () => void;
   updateBadge?: React.ReactNode;
 }
 
-const SkillsView: React.FC<SkillsViewProps> = ({ isSidebarCollapsed, onToggleSidebar, onNewChat, updateBadge }) => {
+const SkillsView: React.FC<SkillsViewProps> = ({ isSidebarCollapsed, onToggleSidebar, onNewChat, onShowCowork, updateBadge }) => {
   const isMac = window.electron.platform === 'darwin';
   return (
     <div className="flex-1 flex flex-col dark:bg-claude-darkBg bg-claude-bg h-full">
@@ -41,7 +43,10 @@ const SkillsView: React.FC<SkillsViewProps> = ({ isSidebarCollapsed, onToggleSid
             {i18nService.t('skills')}
           </h1>
         </div>
-        <WindowTitleBar inline />
+        <div className="non-draggable flex min-w-0 items-center gap-2 shrink-0">
+          <AgentQuickSwitchBar onShowCowork={onShowCowork} />
+          <WindowTitleBar inline />
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0 [scrollbar-gutter:stable]">

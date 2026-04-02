@@ -13,11 +13,13 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import SidebarToggleIcon from '../icons/SidebarToggleIcon';
 import ComposeIcon from '../icons/ComposeIcon';
 import WindowTitleBar from '../window/WindowTitleBar';
+import AgentQuickSwitchBar from '../AgentQuickSwitchBar';
 
 interface ScheduledTasksViewProps {
   isSidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
   onNewChat?: () => void;
+  onShowCowork: () => void;
   updateBadge?: React.ReactNode;
 }
 
@@ -27,6 +29,7 @@ const ScheduledTasksView: React.FC<ScheduledTasksViewProps> = ({
   isSidebarCollapsed,
   onToggleSidebar,
   onNewChat,
+  onShowCowork,
   updateBadge,
 }) => {
   const dispatch = useDispatch();
@@ -115,7 +118,10 @@ const ScheduledTasksView: React.FC<ScheduledTasksViewProps> = ({
             {i18nService.t('scheduledTasksTitle')}
           </h1>
         </div>
-        <WindowTitleBar inline />
+        <div className="non-draggable flex min-w-0 items-center gap-2 shrink-0">
+          <AgentQuickSwitchBar onShowCowork={onShowCowork} />
+          <WindowTitleBar inline />
+        </div>
       </div>
 
       {/* Tabs + New Task button */}

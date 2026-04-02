@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { agentService } from '../services/agent';
 import { coworkService } from '../services/cowork';
 import { i18nService } from '../services/i18n';
 import CoworkSessionList from './cowork/CoworkSessionList';
@@ -170,9 +169,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
       <div className="flex-1 overflow-y-auto px-2 pb-4">
-        <SidebarAgentList
-          onShowCowork={onShowCowork}
-        />
         <div className="mx-1 mb-1.5 mt-0.5 border-l-2 border-claude-accent/35 pl-2.5 pr-1 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-claude-textSecondary/75 dark:border-claude-accent/40 dark:text-claude-darkTextSecondary/80">
           {i18nService.t('coworkHistory')}
         </div>
@@ -279,54 +275,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
     </aside>
-  );
-};
-
-/* ── Simplified agent list for sidebar quick-switch ─── */
-
-const SidebarAgentList: React.FC<{
-  onShowCowork: () => void;
-}> = ({ onShowCowork }) => {
-  const agents = useSelector((state: RootState) => state.agent.agents);
-  const currentAgentId = useSelector((state: RootState) => state.agent.currentAgentId);
-
-  useEffect(() => {
-    agentService.loadAgents();
-  }, []);
-
-  const enabledAgents = agents.filter((a) => a.enabled);
-
-  // Hide section if only the default main agent exists
-  if (enabledAgents.length <= 1 && !enabledAgents.some((a) => a.source === 'preset')) {
-    return null;
-  }
-
-  const handleSwitch = (agentId: string) => {
-    if (agentId === currentAgentId) return;
-    agentService.switchAgent(agentId);
-    coworkService.loadSessions(agentId);
-    onShowCowork();
-  };
-
-  return (
-    <div className="px-1 pb-2 sticky top-0 bg-claude-bg z-10">
-      <div className="space-y-0.5">
-        {enabledAgents.map((agent) => (
-          <div
-            key={agent.id}
-            className={`group hover:bg-claude-accent/30 flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm cursor-pointer transition-colors ${
-              currentAgentId === agent.id
-                ? 'bg-claude-accent/60 text-background ring-1 ring-claude-accent/15'
-                : 'dark:text-claude-darkTextSecondary text-claude-textSecondary hover:bg-claude-surfaceHover/90 dark:hover:bg-claude-darkSurfaceHover/80'
-            }`}
-            onClick={() => handleSwitch(agent.id)}
-          >
-            <span className="text-base leading-none">{agent.icon || '🦞'}</span>
-            <span className="truncate flex-1 text-xs font-medium">{agent.name}</span>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 };
 

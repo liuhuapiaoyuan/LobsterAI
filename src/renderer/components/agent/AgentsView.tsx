@@ -10,12 +10,13 @@ import AgentSettingsPanel from './AgentSettingsPanel';
 import SidebarToggleIcon from '../icons/SidebarToggleIcon';
 import ComposeIcon from '../icons/ComposeIcon';
 import WindowTitleBar from '../window/WindowTitleBar';
+import AgentQuickSwitchBar from '../AgentQuickSwitchBar';
 
 interface AgentsViewProps {
   isSidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
   onNewChat?: () => void;
-  onShowCowork?: () => void;
+  onShowCowork: () => void;
   onShowLobsterPond?: () => void;
   updateBadge?: React.ReactNode;
 }
@@ -43,7 +44,7 @@ const AgentsView: React.FC<AgentsViewProps> = ({
   const handleSwitchAgent = (agentId: string) => {
     agentService.switchAgent(agentId);
     coworkService.loadSessions(agentId);
-    onShowCowork?.();
+    onShowCowork();
   };
 
   return (
@@ -74,7 +75,10 @@ const AgentsView: React.FC<AgentsViewProps> = ({
             {i18nService.t('myAgents')}
           </h1>
         </div>
-        <WindowTitleBar inline />
+        <div className="non-draggable flex min-w-0 items-center gap-2 shrink-0">
+          <AgentQuickSwitchBar onShowCowork={onShowCowork} />
+          <WindowTitleBar inline />
+        </div>
       </div>
 
       {/* Content */}

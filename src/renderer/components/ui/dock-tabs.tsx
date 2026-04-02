@@ -114,18 +114,7 @@ function DockIconBar({
         {item.label}
       </motion.div>
 
-      <motion.div
-        className="absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-white/80"
-        animate={{
-          scale: active || isClicked ? 1.5 : 1,
-          opacity: active ? 1 : isClicked ? 1 : 0.7,
-        }}
-        transition={{
-          type: 'spring',
-          stiffness: 500,
-          damping: 30,
-        }}
-      />
+   
     </motion.button>
   );
 }

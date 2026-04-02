@@ -15,6 +15,7 @@ import SidebarToggleIcon from '../icons/SidebarToggleIcon';
 import ComposeIcon from '../icons/ComposeIcon';
 import { ShieldCheckIcon } from '@heroicons/react/24/outline';
 import WindowTitleBar from '../window/WindowTitleBar';
+import AgentQuickSwitchBar from '../AgentQuickSwitchBar';
 import { QuickActionBar, PromptPanel } from '../quick-actions';
 import RuixenMoonChat from '../ui/ruixen-moon-chat';
 import type { SettingsOpenOptions } from '../Settings';
@@ -26,10 +27,11 @@ export interface CoworkViewProps {
   isSidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
   onNewChat?: () => void;
+  onShowCowork: () => void;
   updateBadge?: React.ReactNode;
 }
 
-const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSkills, isSidebarCollapsed, onToggleSidebar, onNewChat, updateBadge }) => {
+const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSkills, isSidebarCollapsed, onToggleSidebar, onNewChat, onShowCowork, updateBadge }) => {
   const dispatch = useDispatch();
   const isMac = window.electron.platform === 'darwin';
   const [isInitialized, setIsInitialized] = useState(false);
@@ -458,8 +460,11 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
   if (!isInitialized) {
     return (
       <div className="flex-1 h-full flex flex-col dark:bg-claude-darkBg bg-claude-bg">
-        <div className="draggable flex h-12 items-center justify-end px-4 border-b dark:border-claude-darkBorder border-claude-border shrink-0">
-          <WindowTitleBar inline />
+        <div className="draggable flex h-12 items-center justify-end gap-2 px-4 border-b dark:border-claude-darkBorder border-claude-border shrink-0">
+          <div className="non-draggable flex min-w-0 items-center gap-2 shrink-0">
+            <AgentQuickSwitchBar onShowCowork={onShowCowork} />
+            <WindowTitleBar inline />
+          </div>
         </div>
         <div className="flex-1 flex items-center justify-center">
           <div className="dark:text-claude-darkTextSecondary text-claude-textSecondary">
@@ -500,13 +505,14 @@ const CoworkView: React.FC<CoworkViewProps> = ({ onRequestAppSettings, onShowSki
         )}
         <ModelSelector />
       </div>
-      <div className="non-draggable flex items-center">
-        <div className="flex items-center gap-1.5 mr-2 px-2.5 py-1">
+      <div className="non-draggable flex min-w-0 items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 px-2.5 py-1">
           <ShieldCheckIcon className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
           <span className="text-xs text-green-600 dark:text-green-400 whitespace-nowrap">
             {i18nService.t('lobsterGuardEnabled')}
           </span>
         </div>
+        <AgentQuickSwitchBar onShowCowork={onShowCowork} />
         <WindowTitleBar inline />
       </div>
     </div>

@@ -287,7 +287,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
     modelSelectorNoModels: '请先在设置中配置模型',
     coworkApiConfigTitle: 'API 配置',
     coworkApiConfigHint: '支持 Anthropic 兼容与 OpenAI 兼容协议（OpenAI 兼容通过本地转换服务接入）。',
-    coworkAgentEngine: 'Agent 引擎',
+    coworkAgentEngine: 'OpenClaw',
     coworkAgentEngineOpenClaw: 'OpenClaw（默认）',
     coworkAgentEngineOpenClawHint: '个人 AI 助理',
     coworkAgentEngineClaudeLegacy: 'Cowork',

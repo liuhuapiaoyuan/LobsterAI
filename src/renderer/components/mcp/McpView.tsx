@@ -4,15 +4,17 @@ import McpManager from './McpManager';
 import SidebarToggleIcon from '../icons/SidebarToggleIcon';
 import ComposeIcon from '../icons/ComposeIcon';
 import WindowTitleBar from '../window/WindowTitleBar';
+import AgentQuickSwitchBar from '../AgentQuickSwitchBar';
 
 interface McpViewProps {
   isSidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
   onNewChat?: () => void;
+  onShowCowork: () => void;
   updateBadge?: React.ReactNode;
 }
 
-const McpView: React.FC<McpViewProps> = ({ isSidebarCollapsed, onToggleSidebar, onNewChat, updateBadge }) => {
+const McpView: React.FC<McpViewProps> = ({ isSidebarCollapsed, onToggleSidebar, onNewChat, onShowCowork, updateBadge }) => {
   const isMac = window.electron.platform === 'darwin';
   return (
     <div className="flex-1 flex flex-col dark:bg-claude-darkBg bg-claude-bg h-full">
@@ -41,7 +43,10 @@ const McpView: React.FC<McpViewProps> = ({ isSidebarCollapsed, onToggleSidebar, 
             {i18nService.t('mcpServers')}
           </h1>
         </div>
-        <WindowTitleBar inline />
+        <div className="non-draggable flex min-w-0 items-center gap-2 shrink-0">
+          <AgentQuickSwitchBar onShowCowork={onShowCowork} />
+          <WindowTitleBar inline />
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0 [scrollbar-gutter:stable]">
