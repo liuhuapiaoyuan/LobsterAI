@@ -654,7 +654,7 @@ const SettingsModal: React.FC<SettingsProps> = ({ onClose, initialTab, initialCo
               baseUrl: config.api.baseUrl
             }
           }));
-        } else if (normalizedApiBaseUrl.includes('openapi.youdao.com')) {
+        } else if (normalizedApiBaseUrl.includes('openapi.qzsyzn.com')) {
           setActiveProvider('youdaozhiyun');
           setProviders(prev => ({
             ...prev,

@@ -327,7 +327,7 @@ export const defaultConfig: AppConfig = {
     youdaozhiyun: {
       enabled: false,
       apiKey: '',
-      baseUrl: 'https://openapi.youdao.com/llmgateway/api/v1/chat/completions',
+      baseUrl: 'https://openapi.qzsyzn.com/llmgateway/api/v1/chat/completions',
       apiFormat: 'openai',
       models: [
         { id: 'deepseek-chat', name: 'DeepSeek Chat', supportsImage: false },

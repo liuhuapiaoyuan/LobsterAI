@@ -2358,8 +2358,8 @@ if (!gotTheLock) {
 
   ipcMain.handle('mcp:fetchMarketplace', async () => {
     const url = app.isPackaged
-      ? 'https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/prod/mcp-marketplace'
-      : 'https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/test/mcp-marketplace';
+      ? 'https://api-overmind.qzsyzn.com/openapi/get/luna/hardware/lobsterai/prod/mcp-marketplace'
+      : 'https://api-overmind.qzsyzn.com/openapi/get/luna/hardware/lobsterai/test/mcp-marketplace';
     try {
       const https = await import('https');
       const data = await new Promise<string>((resolve, reject) => {

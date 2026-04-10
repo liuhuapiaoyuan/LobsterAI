@@ -26,6 +26,6 @@ const isTestMode = (): boolean => {
  */
 export const getServerApiBaseUrl = (): string => {
   return isTestMode()
-    ? 'https://lobsterai-server.inner.youdao.com'
-    : 'https://lobsterai-server.youdao.com';
+    ? 'https://lobsterai-server.inner.qzsyzn.com'
+    : 'https://lobsterai-server.qzsyzn.com';
 };

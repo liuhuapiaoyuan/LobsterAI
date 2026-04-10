@@ -23,7 +23,7 @@
 
 ---
 
-**YuanAI** is an all-in-one personal assistant Agent developed by [NetEase Youdao](https://www.youdao.com/). It works around the clock to handle your everyday tasks — data analysis, making presentations, generating videos, writing documents, searching the web, sending emails, scheduling tasks, and more.
+**YuanAI** is an all-in-one personal assistant Agent developed by [NetEase Youdao](https://www.qzsyzn.com/). It works around the clock to handle your everyday tasks — data analysis, making presentations, generating videos, writing documents, searching the web, sending emails, scheduling tasks, and more.
 
 At its core is **Cowork mode** — it executes tools, manipulates files, and runs commands in a local or sandboxed environment, all under your supervision. You can also chat with agent via Telegram, Discord, DingTalk or Feishu (Lark) and get work done from your phone anytime, anywhere.
 
@@ -503,4 +503,4 @@ Please include in your PR description: a summary of changes, linked issue (if an
 
 ---
 
-Built and maintained by [NetEase Youdao](https://www.youdao.com/).
+Built and maintained by [NetEase Youdao](https://www.qzsyzn.com/).
