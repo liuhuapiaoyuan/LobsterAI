@@ -281,6 +281,8 @@ class ApiService {
       return 'minimax';
     } else if (normalizedModelId.startsWith('qwen') || normalizedModelId.startsWith('qvq')) {
       return 'qwen';
+    } else if (normalizedModelId === 'yuan' || normalizedModelId.startsWith('yuan-')) {
+      return 'shuangyuan';
     } else if (normalizedModelId.startsWith('mimo')) {
       return 'shuangyuan';
     } else if (normalizedModelId.startsWith('step-')) {

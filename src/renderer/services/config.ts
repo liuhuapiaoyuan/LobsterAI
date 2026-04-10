@@ -78,6 +78,7 @@ const normalizeProvidersConfig = (providers: AppConfig['providers']): AppConfig[
 const REMOVED_PROVIDER_MODELS: Record<string, string[]> = {
   deepseek: ['deepseek-chat'],
   openai: ['gpt-5.2-2025-12-11'],
+  shuangyuan: ['mimo-v2-flash'],
 };
 
 // Models to inject into existing saved configs (for existing users).
@@ -99,6 +100,10 @@ const ADDED_PROVIDER_MODELS: Record<string, { models: Array<{ id: string; name: 
       { id: 'gpt-5.2', name: 'GPT-5.2', supportsImage: true },
       { id: 'gpt-5.3-codex', name: 'GPT-5.3 Codex', supportsImage: true },
     ],
+    position: 'start',
+  },
+  shuangyuan: {
+    models: [{ id: 'yuan', name: 'Yuan', supportsImage: false }],
     position: 'start',
   },
 };
@@ -158,6 +163,9 @@ class ConfigService {
         if (migratedModel.defaultModelProvider === 'xiaomi') {
           migratedModel.defaultModelProvider = defaultConfig.model.defaultModelProvider;
           migratedModel.defaultModel = defaultConfig.model.defaultModel;
+        }
+        if (migratedModel.defaultModel === 'mimo-v2-flash') {
+          migratedModel.defaultModel = 'yuan';
         }
         if (allRemovedIds.includes(migratedModel.defaultModel)) {
           migratedModel.defaultModel = defaultConfig.model.defaultModel;

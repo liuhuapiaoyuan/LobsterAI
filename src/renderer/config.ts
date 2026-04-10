@@ -353,7 +353,7 @@ export const defaultConfig: AppConfig = {
       baseUrl: 'https://ai-api.qzsyzn.com/anthropic',
       apiFormat: 'anthropic',
       models: [
-        { id: 'mimo-v2-flash', name: 'MiMo V2 Flash', supportsImage: false }
+        { id: 'yuan', name: 'Yuan', supportsImage: false }
       ]
     },
     stepfun: {
